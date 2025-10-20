@@ -19,6 +19,7 @@ from utils.simple_face_overlay import SimpleFaceOverlay
 from utils.calendar_generator import CalendarGenerator, CALENDAR_THEMES
 from utils.printful import PrintfulAPI
 from utils.ai_image_generator import AIImageGenerator, ENHANCED_CALENDAR_THEMES
+from utils.local_ai_generator import LocalAIGenerator
 
 # Load environment variables
 load_dotenv()
@@ -164,8 +165,17 @@ async def process_calendar_generation(job_id: str, source_path: Path):
 
         # Initialize services
         calendar_gen = CalendarGenerator()
-        ai_generator = AIImageGenerator()
         overlay_service = SimpleFaceOverlay()
+
+        # Try local AI first, then fall back to Replicate
+        use_local_ai = os.getenv('USE_LOCAL_AI', 'true').lower() == 'true'
+
+        if use_local_ai:
+            ai_generator = LocalAIGenerator(method="auto")
+            print("✓ Using local AI generation")
+        else:
+            ai_generator = AIImageGenerator()
+            print("✓ Using Replicate API")
 
         output_images = []
         ai_templates_dir = OUTPUT_DIR / f"{job_id}_ai_templates"
