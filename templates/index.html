@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KevCal - Face Swap Calendar Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎭 KevCal</h1>
+            <p class="subtitle">Face Swap Calendar Generator</p>
+            <p class="description">Upload 1-3 photos and create a personalized 12-month calendar with your face on themed professional templates!</p>
+        </header>
+
+        <!-- API Status -->
+        <div id="api-status" class="api-status">
+            <span id="status-indicator" class="status-indicator">🔄</span>
+            <span id="status-text">Checking Printful connection...</span>
+        </div>
+
+        <!-- Step 1: Upload Photos -->
+        <section class="upload-section">
+            <h2>Step 1: Upload Your Photo(s)</h2>
+            <p>Upload 1-3 clear photos of the person. Photos with clear, front-facing faces work best!</p>
+
+            <div class="upload-area" id="upload-area">
+                <input type="file" id="file-input" accept="image/*" multiple style="display: none;">
+                <div class="upload-placeholder">
+                    <span class="upload-icon">📸</span>
+                    <p>Click to upload or drag & drop images here</p>
+                    <p class="file-types">PNG, JPG, JPEG (max 3 files)</p>
+                </div>
+            </div>
+
+            <div id="uploaded-files" class="uploaded-files"></div>
+        </section>
+
+        <!-- Step 2: Calendar Themes Preview -->
+        <section class="themes-section">
+            <h2>Step 2: Preview Calendar Themes</h2>
+            <p>Your face will be swapped onto these 12 professional themed templates:</p>
+
+            <div class="themes-grid">
+                {% for theme in themes %}
+                <div class="theme-card">
+                    <div class="theme-month">{{ theme.name }}</div>
+                    <div class="theme-icon">{{ theme.theme }}</div>
+                    <div class="theme-description">{{ theme.description[:80] }}...</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Step 3: Generate Calendar -->
+        <section class="generate-section">
+            <h2>Step 3: Generate Your Calendar</h2>
+            <button id="generate-btn" class="btn btn-primary" disabled>
+                Generate Calendar Images
+            </button>
+
+            <div id="progress-container" class="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-text" class="progress-text">Processing...</p>
+            </div>
+        </section>
+
+        <!-- Step 4: Results -->
+        <section id="results-section" class="results-section" style="display: none;">
+            <h2>Step 4: Your Calendar Images</h2>
+            <p>Preview your personalized calendar images below. You can download them individually or create a Printful product!</p>
+
+            <div class="results-actions">
+                <button id="create-product-btn" class="btn btn-success">
+                    Create Printful Calendar Product
+                </button>
+                <button id="download-all-btn" class="btn btn-secondary">
+                    Download All Images
+                </button>
+            </div>
+
+            <div id="results-grid" class="results-grid"></div>
+        </section>
+
+        <footer>
+            <p>Powered by InsightFace, FastAPI, and Printful API</p>
+            <p>RTX 4080 GPU Accelerated Face Swapping</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
