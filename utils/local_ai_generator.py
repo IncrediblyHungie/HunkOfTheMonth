@@ -3,11 +3,18 @@ Local AI Image Generation using Stable Diffusion
 Supports both direct diffusers and ComfyUI API
 """
 import os
-import torch
 from pathlib import Path
 import requests
 import json
 import time
+
+# Optional imports - will gracefully handle if not installed
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None
 
 class LocalAIGenerator:
     """Generate images locally using Stable Diffusion"""
@@ -45,6 +52,9 @@ class LocalAIGenerator:
 
     def _try_init_diffusers(self):
         """Try to initialize diffusers pipeline"""
+        if not TORCH_AVAILABLE:
+            return False
+
         try:
             from diffusers import StableDiffusionXLPipeline, DPMSolverMultistepScheduler
 

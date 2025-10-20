@@ -47,7 +47,7 @@
                 <div class="theme-card">
                     <div class="theme-month">{{ theme.name }}</div>
                     <div class="theme-icon">{{ theme.theme }}</div>
-                    <div class="theme-description">{{ theme.description[:80] }}...</div>
+                    <div class="theme-description">{{ theme.ai_prompt[:80] if theme.ai_prompt else theme.get('description', '')[:80] }}...</div>
                 </div>
                 {% endfor %}
             </div>
