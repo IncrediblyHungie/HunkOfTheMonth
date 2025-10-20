@@ -93,14 +93,14 @@ class PrintfulAPI:
             data = response.json()
             return data['result']['id']
 
-    def create_calendar_product(
+    def create_calendar_mockup(
         self,
         image_paths: List[str],
         product_id: int = 296,  # Default: 12x12 Wall Calendar
         variant_id: int = None
     ):
         """
-        Create a calendar product with uploaded images
+        Create a calendar mockup with uploaded images
 
         Args:
             image_paths: List of 12 calendar image paths (one per month)
@@ -108,7 +108,7 @@ class PrintfulAPI:
             variant_id: Specific variant ID if known
 
         Returns:
-            Created product information
+            Mockup task information with task_key to check status
         """
         if len(image_paths) != 12:
             raise ValueError("Calendar requires exactly 12 images (one per month)")
@@ -118,38 +118,109 @@ class PrintfulAPI:
         file_ids = []
         for i, image_path in enumerate(image_paths, 1):
             print(f"  Uploading image {i}/12...")
-            file_id = self.upload_image(image_path)
-            file_ids.append(file_id)
+            try:
+                file_id = self.upload_image(image_path)
+                file_ids.append(file_id)
+            except Exception as e:
+                print(f"  Failed to upload image {i}: {e}")
+                raise
 
         # Create product
-        print("Creating calendar product...")
+        print("Creating calendar mockup...")
 
-        # Get product variants to find the right one
-        product_info = requests.get(
-            f"{self.base_url}/products/{product_id}",
-            headers=self.headers
-        ).json()
+        # Get product information
+        try:
+            product_info = requests.get(
+                f"{self.base_url}/products/{product_id}",
+                headers=self.headers
+            ).json()
+        except Exception as e:
+            print(f"Failed to get product info: {e}")
+            # Use default variant
+            variant_id = 8379  # Default calendar variant
 
         # Use first variant if not specified
-        if not variant_id and product_info['result']['variants']:
+        if not variant_id and product_info.get('result', {}).get('variants'):
             variant_id = product_info['result']['variants'][0]['id']
 
-        # Create mockup generator request
-        # This creates a visual mockup of the calendar
+        # Prepare mockup data
+        # For calendars, we need to specify which file goes to which month
+        files = []
+        for i, file_id in enumerate(file_ids, 1):
+            files.append({
+                "placement": "page",  # Calendar page placement
+                "image_url": None,
+                "position": {"area_width": 1800, "area_height": 2400, "width": 1800, "height": 2400, "top": 0, "left": 0},
+                "id": file_id
+            })
+
         mockup_data = {
             "variant_ids": [variant_id],
             "format": "jpg",
-            "files": [{"id": file_id} for file_id in file_ids]
+            "files": [{"id": fid} for fid in file_ids]  # Simplified format
         }
 
-        response = requests.post(
-            f"{self.base_url}/mockup-generator/create-task/{product_id}",
-            headers=self.headers,
-            json=mockup_data
+        try:
+            response = requests.post(
+                f"{self.base_url}/mockup-generator/create-task/{product_id}",
+                headers=self.headers,
+                json=mockup_data
+            )
+            response.raise_for_status()
+            result = response.json()
+
+            print("✓ Mockup generation task created")
+            return result
+
+        except requests.exceptions.HTTPError as e:
+            print(f"Mockup creation failed: {e}")
+            print(f"Response: {e.response.text}")
+            raise
+
+    def get_mockup_task_result(self, task_key: str):
+        """
+        Get the result of a mockup generation task
+
+        Args:
+            task_key: Task key from create_calendar_mockup
+
+        Returns:
+            Mockup task result with URLs to mockup images
+        """
+        response = requests.get(
+            f"{self.base_url}/mockup-generator/task",
+            params={"task_key": task_key},
+            headers=self.headers
         )
         response.raise_for_status()
-
         return response.json()
+
+    def create_calendar_product(
+        self,
+        image_paths: List[str],
+        product_id: int = 296,
+        variant_id: int = None
+    ):
+        """
+        Wrapper that creates mockup and waits for result
+
+        Args:
+            image_paths: List of 12 calendar image paths
+            product_id: Printful product ID
+            variant_id: Specific variant ID
+
+        Returns:
+            Complete mockup information
+        """
+        # Create mockup task
+        task_result = self.create_calendar_mockup(image_paths, product_id, variant_id)
+
+        # Return task info so caller can poll for results
+        return {
+            "task_key": task_result.get("result", {}).get("task_key"),
+            "status": "pending",
+            "message": "Mockup generation started. Check status with task_key"
+        }
 
     def create_draft_order(self, calendar_images: List[str], recipient_info: Dict = None):
         """

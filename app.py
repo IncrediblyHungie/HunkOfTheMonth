@@ -2,7 +2,7 @@
 KevCal - Face Swap Calendar Generator
 FastAPI application for creating personalized calendar products
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,6 +15,7 @@ from typing import List
 from dotenv import load_dotenv
 
 from utils.face_swap import FaceSwapper
+from utils.simple_face_overlay import SimpleFaceOverlay
 from utils.calendar_generator import CalendarGenerator, CALENDAR_THEMES
 from utils.printful import PrintfulAPI
 
@@ -115,7 +116,7 @@ async def upload_photo(file: UploadFile = File(...)):
 @app.post("/api/generate")
 async def generate_calendar(
     background_tasks: BackgroundTasks,
-    source_file_id: str
+    source_file_id: str = Form(...)
 ):
     """
     Generate calendar images with face swaps
@@ -159,12 +160,9 @@ async def process_calendar_generation(job_id: str, source_path: Path):
     try:
         jobs[job_id]["status"] = "processing"
 
-        # Initialize face swapper
-        swapper = get_face_swapper()
+        # Initialize calendar generator
         calendar_gen = CalendarGenerator()
 
-        # For MVP, we'll use placeholder template images
-        # In production, you'd have actual themed template images
         output_images = []
 
         for i, theme in enumerate(CALENDAR_THEMES, 1):
@@ -173,9 +171,9 @@ async def process_calendar_generation(job_id: str, source_path: Path):
             # Update progress
             jobs[job_id]["progress"] = int((i / 12) * 100)
 
-            # For MVP: Create a simple template or use source image
-            # In production: Use actual themed template images
-            template_path = source_path  # Placeholder
+            # Look for template image
+            template_filename = f"{month:02d}_{theme['theme'].split()[0].lower()}.jpg"
+            template_path = TEMPLATE_DIR / template_filename
 
             # Generate output filename
             output_filename = f"{job_id}_month_{month:02d}_{theme['theme'].replace(' ', '_').lower()}.jpg"
@@ -183,9 +181,25 @@ async def process_calendar_generation(job_id: str, source_path: Path):
             final_output = OUTPUT_DIR / output_filename
 
             try:
-                # Perform face swap (in MVP, this will just be identity for testing)
-                # In production with real templates, this swaps face onto template
-                swapper.swap_face(source_path, template_path, str(swap_output))
+                # Check if template exists
+                if template_path.exists():
+                    # Use simple face overlay (more reliable than full face swap)
+                    try:
+                        overlay = SimpleFaceOverlay()
+                        overlay.overlay_face_on_template(
+                            str(source_path),
+                            str(template_path),
+                            str(swap_output),
+                            position="center",
+                            size=(500, 500)
+                        )
+                    except Exception as swap_error:
+                        print(f"Face overlay failed for month {month}, using template: {swap_error}")
+                        # If overlay fails, just use the template
+                        shutil.copy(template_path, swap_output)
+                else:
+                    # No template, use source image
+                    shutil.copy(source_path, swap_output)
 
                 # Add calendar overlay
                 calendar_gen.add_calendar_overlay(str(swap_output), str(final_output), month)
@@ -203,6 +217,8 @@ async def process_calendar_generation(job_id: str, source_path: Path):
 
             except Exception as e:
                 print(f"Error processing month {month}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
 
         jobs[job_id]["status"] = "completed"
@@ -213,6 +229,8 @@ async def process_calendar_generation(job_id: str, source_path: Path):
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
         print(f"Calendar generation failed: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 @app.get("/api/job/{job_id}")
@@ -233,7 +251,7 @@ async def get_job_status(job_id: str):
 
 
 @app.post("/api/printful/create-product")
-async def create_printful_product(job_id: str):
+async def create_printful_product(job_id: str = Form(...)):
     """
     Create Printful calendar product from generated images
 
@@ -241,7 +259,7 @@ async def create_printful_product(job_id: str):
         job_id: Job ID of completed calendar generation
 
     Returns:
-        Printful product information
+        Printful product information with task_key
     """
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -264,16 +282,48 @@ async def create_printful_product(job_id: str):
                 raise HTTPException(status_code=400, detail=f"Missing image for month {month}")
             image_paths.append(month_image["path"])
 
-        # Create calendar product
+        # Create calendar mockup
         result = api.create_calendar_product(image_paths)
+
+        # Store task_key in job for later retrieval
+        job["printful_task_key"] = result.get("task_key")
 
         return {
             "success": True,
-            "printful_data": result
+            "task_key": result.get("task_key"),
+            "status": "pending",
+            "message": "Calendar mockup generation started"
         }
 
     except Exception as e:
+        print(f"Printful error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to create Printful product: {e}")
+
+
+@app.get("/api/printful/mockup-status/{task_key}")
+async def get_mockup_status(task_key: str):
+    """
+    Get status of Printful mockup generation
+
+    Args:
+        task_key: Printful mockup task key
+
+    Returns:
+        Mockup status and URLs if complete
+    """
+    try:
+        api = get_printful_api()
+        result = api.get_mockup_task_result(task_key)
+
+        return {
+            "success": True,
+            "mockup_data": result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get mockup status: {e}")
 
 
 @app.get("/api/printful/verify")

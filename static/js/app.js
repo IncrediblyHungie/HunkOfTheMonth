@@ -238,27 +238,105 @@ async function createPrintfulProduct() {
     if (!currentJobId) return;
 
     createProductBtn.disabled = true;
-    createProductBtn.textContent = 'Creating product...';
+    createProductBtn.textContent = 'Uploading to Printful...';
 
     try {
-        const response = await fetch(`/api/printful/create-product?job_id=${currentJobId}`, {
-            method: 'POST'
+        // Create FormData to send job_id
+        const formData = new FormData();
+        formData.append('job_id', currentJobId);
+
+        const response = await fetch('/api/printful/create-product', {
+            method: 'POST',
+            body: formData
         });
 
-        if (!response.ok) throw new Error('Failed to create product');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to create product');
+        }
 
         const data = await response.json();
 
-        alert('Printful calendar product created successfully! Check your Printful dashboard.');
-        console.log('Printful product:', data);
+        if (data.task_key) {
+            createProductBtn.textContent = 'Generating mockup...';
+            // Poll for mockup status
+            await pollMockupStatus(data.task_key);
+        } else {
+            alert('Printful calendar upload started!');
+            createProductBtn.disabled = false;
+            createProductBtn.textContent = 'Create Printful Calendar Product';
+        }
 
     } catch (error) {
         console.error('Printful error:', error);
         alert(`Failed to create Printful product: ${error.message}`);
-    } finally {
         createProductBtn.disabled = false;
         createProductBtn.textContent = 'Create Printful Calendar Product';
     }
+}
+
+async function pollMockupStatus(taskKey) {
+    let attempts = 0;
+    const maxAttempts = 30; // 60 seconds timeout
+
+    const pollInterval = setInterval(async () => {
+        attempts++;
+
+        try {
+            const response = await fetch(`/api/printful/mockup-status/${taskKey}`);
+            const data = await response.json();
+
+            const mockupData = data.mockup_data?.result;
+
+            if (mockupData?.status === 'completed') {
+                clearInterval(pollInterval);
+                createProductBtn.textContent = 'Create Printful Calendar Product';
+                createProductBtn.disabled = false;
+
+                // Show mockup URLs
+                if (mockupData.mockups && mockupData.mockups.length > 0) {
+                    showPrintfulMockups(mockupData.mockups);
+                } else {
+                    alert('Printful calendar created! Check your Printful dashboard.');
+                }
+            } else if (mockupData?.status === 'failed') {
+                clearInterval(pollInterval);
+                createProductBtn.disabled = false;
+                createProductBtn.textContent = 'Create Printful Calendar Product';
+                alert('Printful mockup generation failed. Please try again.');
+            }
+
+            if (attempts >= maxAttempts) {
+                clearInterval(pollInterval);
+                createProductBtn.disabled = false;
+                createProductBtn.textContent = 'Create Printful Calendar Product';
+                alert('Mockup generation is taking longer than expected. Check your Printful dashboard.');
+            }
+
+        } catch (error) {
+            console.error('Mockup polling error:', error);
+        }
+    }, 2000); // Poll every 2 seconds
+}
+
+function showPrintfulMockups(mockups) {
+    const mockupHtml = mockups.map(mockup => `
+        <div class="result-card" style="border: 3px solid #27ae60;">
+            <img src="${mockup.mockup_url}" alt="Calendar Mockup">
+            <div class="result-info">
+                <div class="result-month" style="color: #27ae60;">Printful Mockup</div>
+                <div class="result-theme">Professional Calendar Rendering</div>
+                <a href="${mockup.mockup_url}" target="_blank" class="btn btn-success result-download">
+                    View Full Size Mockup
+                </a>
+            </div>
+        </div>
+    `).join('');
+
+    resultsGrid.insertAdjacentHTML('afterbegin', mockupHtml);
+
+    alert('✅ Printful calendar mockup ready! Scroll up to see the professional mockup images.');
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 function downloadAllImages() {
