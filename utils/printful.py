@@ -82,12 +82,26 @@ class PrintfulAPI:
         """
         url = f"{self.base_url}/files"
 
+        # Printful requires the file as base64 or URL
+        # Let's try with direct file upload with proper form fields
         with open(image_path, 'rb') as f:
-            files = {'file': f}
-            # Remove Content-Type header for multipart upload
+            files = {
+                'file': (
+                    os.path.basename(image_path),
+                    f,
+                    'image/jpeg'
+                )
+            }
+            # Use standard headers without Content-Type (let requests set it)
             headers = {"Authorization": f"Bearer {self.api_key}"}
 
             response = requests.post(url, headers=headers, files=files)
+
+            # Debug response
+            if response.status_code != 200:
+                print(f"Printful upload error: {response.status_code}")
+                print(f"Response: {response.text}")
+
             response.raise_for_status()
 
             data = response.json()

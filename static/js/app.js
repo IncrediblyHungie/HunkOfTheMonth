@@ -191,7 +191,8 @@ async function pollJobStatus(jobId) {
 
             // Update progress
             progressFill.style.width = `${job.progress}%`;
-            progressText.textContent = `Processing: ${job.progress}%`;
+            const stepText = job.current_step || 'Processing';
+            progressText.textContent = `${stepText} (${job.progress}%)`;
 
             if (job.status === 'completed') {
                 clearInterval(pollInterval);

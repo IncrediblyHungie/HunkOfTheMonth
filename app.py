@@ -18,6 +18,7 @@ from utils.face_swap import FaceSwapper
 from utils.simple_face_overlay import SimpleFaceOverlay
 from utils.calendar_generator import CalendarGenerator, CALENDAR_THEMES
 from utils.printful import PrintfulAPI
+from utils.ai_image_generator import AIImageGenerator, ENHANCED_CALENDAR_THEMES
 
 # Load environment variables
 load_dotenv()
@@ -75,7 +76,7 @@ async def home(request: Request):
     """Render home page"""
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "themes": CALENDAR_THEMES
+        "themes": ENHANCED_CALENDAR_THEMES
     })
 
 
@@ -151,7 +152,7 @@ async def generate_calendar(
 
 async def process_calendar_generation(job_id: str, source_path: Path):
     """
-    Background task to process calendar generation
+    Background task to process calendar generation with AI image generation
 
     Args:
         job_id: Job identifier
@@ -159,61 +160,100 @@ async def process_calendar_generation(job_id: str, source_path: Path):
     """
     try:
         jobs[job_id]["status"] = "processing"
+        jobs[job_id]["progress"] = 0
 
-        # Initialize calendar generator
+        # Initialize services
         calendar_gen = CalendarGenerator()
+        ai_generator = AIImageGenerator()
+        overlay_service = SimpleFaceOverlay()
 
         output_images = []
+        ai_templates_dir = OUTPUT_DIR / f"{job_id}_ai_templates"
+        ai_templates_dir.mkdir(exist_ok=True)
 
-        for i, theme in enumerate(CALENDAR_THEMES, 1):
+        total_steps = len(ENHANCED_CALENDAR_THEMES) * 2  # AI generation + face overlay
+
+        for i, theme in enumerate(ENHANCED_CALENDAR_THEMES):
             month = theme['month']
+            theme_name = theme['theme']
 
-            # Update progress
-            jobs[job_id]["progress"] = int((i / 12) * 100)
+            # Progress for AI generation
+            jobs[job_id]["progress"] = int(((i * 2) / total_steps) * 100)
+            jobs[job_id]["current_step"] = f"Generating AI image for {theme_name}..."
 
-            # Look for template image
-            template_filename = f"{month:02d}_{theme['theme'].split()[0].lower()}.jpg"
-            template_path = TEMPLATE_DIR / template_filename
+            # Step 1: Generate AI image (if enabled)
+            ai_template_path = ai_templates_dir / f"{month:02d}_{theme_name.lower().replace(' ', '_')}_ai.jpg"
 
-            # Generate output filename
-            output_filename = f"{job_id}_month_{month:02d}_{theme['theme'].replace(' ', '_').lower()}.jpg"
+            if ai_generator.enabled:
+                try:
+                    print(f"\n=== Month {month}: {theme_name} ===")
+                    ai_result = ai_generator.generate_themed_image(
+                        theme['ai_prompt'],
+                        theme_name,
+                        str(ai_template_path)
+                    )
+
+                    if ai_result:
+                        template_to_use = ai_template_path
+                        print(f"✓ Using AI-generated template for {theme_name}")
+                    else:
+                        # Fall back to placeholder template
+                        placeholder_template = TEMPLATE_DIR / f"{month:02d}_{theme_name.split()[0].lower()}.jpg"
+                        template_to_use = placeholder_template if placeholder_template.exists() else source_path
+                        print(f"⚠ Falling back to placeholder for {theme_name}")
+
+                except Exception as ai_error:
+                    print(f"AI generation error for {theme_name}: {ai_error}")
+                    placeholder_template = TEMPLATE_DIR / f"{month:02d}_{theme_name.split()[0].lower()}.jpg"
+                    template_to_use = placeholder_template if placeholder_template.exists() else source_path
+            else:
+                # AI disabled, use placeholder templates
+                placeholder_template = TEMPLATE_DIR / f"{month:02d}_{theme_name.split()[0].lower()}.jpg"
+                template_to_use = placeholder_template if placeholder_template.exists() else source_path
+                print(f"AI disabled, using placeholder for {theme_name}")
+
+            # Progress for face overlay
+            jobs[job_id]["progress"] = int(((i * 2 + 1) / total_steps) * 100)
+            jobs[job_id]["current_step"] = f"Adding face to {theme_name}..."
+
+            # Step 2: Overlay face on template (AI or placeholder)
+            output_filename = f"{job_id}_month_{month:02d}_{theme_name.replace(' ', '_').lower()}.jpg"
             swap_output = OUTPUT_DIR / f"swap_{output_filename}"
             final_output = OUTPUT_DIR / output_filename
 
             try:
-                # Check if template exists
-                if template_path.exists():
-                    # Use simple face overlay (more reliable than full face swap)
+                # Overlay face
+                if template_to_use.exists():
                     try:
-                        overlay = SimpleFaceOverlay()
-                        overlay.overlay_face_on_template(
+                        overlay_service.overlay_face_on_template(
                             str(source_path),
-                            str(template_path),
+                            str(template_to_use),
                             str(swap_output),
                             position="center",
-                            size=(500, 500)
+                            size=(400, 400)
                         )
-                    except Exception as swap_error:
-                        print(f"Face overlay failed for month {month}, using template: {swap_error}")
-                        # If overlay fails, just use the template
-                        shutil.copy(template_path, swap_output)
+                    except Exception as overlay_error:
+                        print(f"Face overlay failed for {theme_name}: {overlay_error}")
+                        shutil.copy(template_to_use, swap_output)
                 else:
-                    # No template, use source image
                     shutil.copy(source_path, swap_output)
 
-                # Add calendar overlay
+                # Step 3: Add calendar grid
                 calendar_gen.add_calendar_overlay(str(swap_output), str(final_output), month)
 
                 output_images.append({
                     "month": month,
-                    "theme": theme['theme'],
+                    "theme": theme_name,
                     "url": f"/output/{output_filename}",
-                    "path": str(final_output)
+                    "path": str(final_output),
+                    "ai_generated": ai_generator.enabled and ai_template_path.exists()
                 })
 
                 # Clean up intermediate file
                 if swap_output.exists():
                     swap_output.unlink()
+
+                print(f"✓ Completed month {month}: {theme_name}")
 
             except Exception as e:
                 print(f"Error processing month {month}: {e}")
@@ -223,11 +263,13 @@ async def process_calendar_generation(job_id: str, source_path: Path):
 
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100
+        jobs[job_id]["current_step"] = "Calendar generation complete!"
         jobs[job_id]["images"] = output_images
 
     except Exception as e:
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
+        jobs[job_id]["current_step"] = f"Failed: {str(e)}"
         print(f"Calendar generation failed: {e}")
         import traceback
         traceback.print_exc()
@@ -355,9 +397,24 @@ async def get_themes():
     Get list of calendar themes
 
     Returns:
-        List of all 12 calendar themes
+        List of all 12 calendar themes with AI prompts
     """
-    return {"themes": CALENDAR_THEMES}
+    return {"themes": ENHANCED_CALENDAR_THEMES}
+
+
+@app.get("/api/ai-status")
+async def get_ai_status():
+    """
+    Check if AI generation is enabled
+
+    Returns:
+        AI generation status
+    """
+    ai_gen = AIImageGenerator()
+    return {
+        "ai_enabled": ai_gen.enabled,
+        "message": "AI image generation is enabled" if ai_gen.enabled else "AI disabled - add REPLICATE_API_TOKEN to enable"
+    }
 
 
 @app.delete("/api/cleanup/{job_id}")
