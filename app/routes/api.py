@@ -76,7 +76,6 @@ def generate_month(month_num):
     from app.services.monthly_themes import get_enhanced_prompt
     from PIL import Image as PILImage
     import io
-    import base64
 
     project = get_current_project()
     if not project:
@@ -106,9 +105,9 @@ def generate_month(month_num):
         # Get enhanced prompt for this month
         enhanced_prompt = get_enhanced_prompt(month_num)
 
-        # Get reference images for face-swapping
+        # Get reference images for face-swapping (already raw binary data!)
         uploaded_images = session_storage.get_uploaded_images()
-        reference_image_data = [base64.b64decode(img['file_data']) for img in uploaded_images]
+        reference_image_data = [img['file_data'] for img in uploaded_images]
 
         if not reference_image_data:
             session_storage.update_month_status(month_num, 'failed', error='No reference images found')
