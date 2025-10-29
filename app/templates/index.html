@@ -101,17 +101,20 @@
     <div class="row">
       <div class="col-xl-4 col-lg-4 col-sm-6">
         <div class="ud-single-feature wow fadeInUp" data-wow-delay=".1s">
-          <div class="example-placeholder" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); height: 300px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <div class="text-center text-white">
-              <i class="lni lni-fire" style="font-size: 4rem;"></i>
-              <h3 class="fw-bold mt-3">YOUR FACE HERE</h3>
-            </div>
+          <div class="example-image" style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <img src="{{ url_for('static', filename='assets/images/examples/january.png') }}"
+                 alt="January Firefighter Example"
+                 class="img-fluid"
+                 style="width: 100%; height: 400px; object-fit: cover;">
           </div>
           <div class="ud-feature-content">
-            <h3 class="ud-feature-title">January: New Year's Firefighter</h3>
+            <h3 class="ud-feature-title">
+              <i class="lni lni-fire text-danger me-2"></i>
+              January: New Year's Firefighter
+            </h3>
             <p class="ud-feature-desc">
-              Ripped, shirtless firefighter putting out fireworks with champagne spray.
-              Confetti everywhere. Absolute hero energy.
+              Ripped, shirtless firefighter putting out fireworks with champagne bottle spray.
+              Confetti everywhere. Absolute hero energy!
             </p>
           </div>
         </div>
@@ -119,17 +122,20 @@
 
       <div class="col-xl-4 col-lg-4 col-sm-6">
         <div class="ud-single-feature wow fadeInUp" data-wow-delay=".15s">
-          <div class="example-placeholder" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); height: 300px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <div class="text-center text-white">
-              <i class="lni lni-rocket" style="font-size: 4rem;"></i>
-              <h3 class="fw-bold mt-3">YOUR FACE HERE</h3>
-            </div>
+          <div class="example-image" style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <img src="{{ url_for('static', filename='assets/images/examples/february.png') }}"
+                 alt="February Valentine Cop Example"
+                 class="img-fluid"
+                 style="width: 100%; height: 400px; object-fit: cover;">
           </div>
           <div class="ud-feature-content">
-            <h3 class="ud-feature-title">April: Space Hunk Astronaut</h3>
+            <h3 class="ud-feature-title">
+              <i class="lni lni-heart text-danger me-2"></i>
+              February: Valentine's Day Cupid Cop
+            </h3>
             <p class="ud-feature-desc">
-              Sexy astronaut flexing on the moon in form-fitting space suit.
-              Earth in background. One giant leap for hunkind.
+              Shirtless police officer as Cupid, surrounded by roses and romance.
+              Arresting hearts all February long!
             </p>
           </div>
         </div>
@@ -137,17 +143,20 @@
 
       <div class="col-xl-4 col-lg-4 col-sm-6">
         <div class="ud-single-feature wow fadeInUp" data-wow-delay=".2s">
-          <div class="example-placeholder" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); height: 300px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <div class="text-center text-white">
-              <i class="lni lni-gift" style="font-size: 4rem;"></i>
-              <h3 class="fw-bold mt-3">YOUR FACE HERE</h3>
-            </div>
+          <div class="example-image" style="margin-bottom: 20px; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <img src="{{ url_for('static', filename='assets/images/examples/july.png') }}"
+                 alt="July BBQ Chef Example"
+                 class="img-fluid"
+                 style="width: 100%; height: 400px; object-fit: cover;">
           </div>
           <div class="ud-feature-content">
-            <h3 class="ud-feature-title">October: Rodeo Cowboy Hunk</h3>
+            <h3 class="ud-feature-title">
+              <i class="lni lni-flag text-primary me-2"></i>
+              July: Independence Day BBQ King
+            </h3>
             <p class="ud-feature-desc">
-              Shirtless cowboy riding mechanical bull, abs glistening.
-              Hat stays on. Maximum yeehaw energy.
+              Shirtless chef grilling in patriotic glory with fireworks blazing.
+              America's hottest BBQ master!
             </p>
           </div>
         </div>
@@ -270,9 +279,24 @@
       <div class="ud-about-image order-lg-1">
         <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
           <div class="row g-2 mb-3">
-            <div class="col-4"><img src="https://via.placeholder.com/150x200/667eea/ffffff?text=JAN" class="img-fluid rounded"></div>
-            <div class="col-4"><img src="https://via.placeholder.com/150x200/764ba2/ffffff?text=FEB" class="img-fluid rounded"></div>
-            <div class="col-4"><img src="https://via.placeholder.com/150x200/f093fb/ffffff?text=MAR" class="img-fluid rounded"></div>
+            <div class="col-4">
+              <img src="{{ url_for('static', filename='assets/images/examples/january.png') }}"
+                   class="img-fluid rounded"
+                   style="height: 200px; object-fit: cover;"
+                   alt="January Example">
+            </div>
+            <div class="col-4">
+              <img src="{{ url_for('static', filename='assets/images/examples/february.png') }}"
+                   class="img-fluid rounded"
+                   style="height: 200px; object-fit: cover;"
+                   alt="February Example">
+            </div>
+            <div class="col-4">
+              <img src="{{ url_for('static', filename='assets/images/examples/july.png') }}"
+                   class="img-fluid rounded"
+                   style="height: 200px; object-fit: cover;"
+                   alt="July Example">
+            </div>
           </div>
           <button class="btn btn-success btn-lg w-100">
             <i class="lni lni-cart"></i> Order Calendar - $29.99
