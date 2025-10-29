@@ -15,8 +15,8 @@
                     <h2 class="mb-4">AI is Transforming You into 12 Hunks...</h2>
 
                     <p class="lead mb-4">
-                        We're putting your face on ridiculously sexy bodies! This takes 5-10 minutes.
-                        Feel free to close this page and return later!
+                        We're putting your face on ridiculously sexy bodies! Generating all 12 months simultaneously.
+                        This takes 2-3 minutes. Feel free to close this page and return later!
                     </p>
 
                     <div class="progress mb-4" style="height: 30px;">
@@ -69,13 +69,18 @@
 
 {% block extra_scripts %}
 <script>
-// PARALLEL AI generation - 3 months at a time for faster completion!
+// MAXIMUM PARALLEL AI generation - ALL 12 months at once with retry logic!
 const months = {{ months | tojson }};
 let completedCount = months.filter(m => m.generation_status === 'completed').length;
 let failedCount = 0;
 let activeRequests = 0;
-const MAX_PARALLEL = 3; // Generate 3 months simultaneously
-let monthQueue = [];
+const MAX_PARALLEL = 12; // Generate ALL 12 months simultaneously (4x faster!)
+const MAX_RETRIES = 3; // Retry failed months up to 3 times
+const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
+
+// Track retry attempts per month
+const retryCount = {};
+const failedMonths = new Set();
 
 const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
@@ -86,27 +91,33 @@ function updateProgress() {
     progressText.textContent = `${completedCount}/12 months`;
 }
 
-function updateBadge(monthNum, status) {
+function updateBadge(monthNum, status, retryNum = null) {
     const badge = document.querySelector(`[data-month="${monthNum}"]`);
     if (!badge) return;
 
-    badge.classList.remove('bg-secondary', 'bg-warning', 'bg-success', 'bg-danger');
+    badge.classList.remove('bg-secondary', 'bg-warning', 'bg-success', 'bg-danger', 'bg-info');
 
     if (status === 'processing') {
         badge.classList.add('bg-warning');
-        badge.innerHTML = `${monthNum} <i class="fas fa-spinner fa-spin"></i>`;
+        const retryText = retryNum ? ` (Retry ${retryNum})` : '';
+        badge.innerHTML = `${monthNum} <i class="fas fa-spinner fa-spin"></i>${retryText}`;
     } else if (status === 'completed') {
         badge.classList.add('bg-success');
         badge.innerHTML = `${monthNum} <i class="fas fa-check"></i>`;
+    } else if (status === 'retrying') {
+        badge.classList.add('bg-info');
+        badge.innerHTML = `${monthNum} <i class="fas fa-sync-alt fa-spin"></i>`;
     } else if (status === 'failed') {
         badge.classList.add('bg-danger');
         badge.innerHTML = `${monthNum} <i class="fas fa-times"></i>`;
     }
 }
 
-async function generateMonth(monthNum) {
-    console.log(`🚀 Starting generation for month ${monthNum}...`);
-    updateBadge(monthNum, 'processing');
+async function generateMonth(monthNum, attemptNum = 1) {
+    const isRetry = attemptNum > 1;
+    console.log(`🚀 ${isRetry ? 'Retrying' : 'Starting'} generation for month ${monthNum}... (Attempt ${attemptNum}/${MAX_RETRIES})`);
+
+    updateBadge(monthNum, 'processing', isRetry ? attemptNum : null);
     activeRequests++;
 
     try {
@@ -120,37 +131,57 @@ async function generateMonth(monthNum) {
         const data = await response.json();
 
         if (data.success && data.status === 'completed') {
-            console.log(`✅ Month ${monthNum} completed! (${data.image_size} bytes)`);
+            console.log(`✅ Month ${monthNum} completed! (${data.image_size} bytes)${isRetry ? ' after retry' : ''}`);
             completedCount++;
+            failedMonths.delete(monthNum);
+            delete retryCount[monthNum];
             updateProgress();
             updateBadge(monthNum, 'completed');
         } else {
-            console.error(`❌ Month ${monthNum} failed:`, data.error);
-            failedCount++;
-            updateBadge(monthNum, 'failed');
+            throw new Error(data.error || 'Generation failed');
         }
 
     } catch (error) {
-        console.error(`❌ Error generating month ${monthNum}:`, error);
-        failedCount++;
-        updateBadge(monthNum, 'failed');
+        console.error(`❌ Month ${monthNum} failed (Attempt ${attemptNum}):`, error.message);
+
+        // Track retry attempts
+        retryCount[monthNum] = attemptNum;
+
+        // Retry logic with exponential backoff
+        if (attemptNum < MAX_RETRIES) {
+            const delay = RETRY_DELAYS[attemptNum - 1];
+            console.log(`🔄 Will retry month ${monthNum} in ${delay / 1000} seconds...`);
+            updateBadge(monthNum, 'retrying');
+
+            setTimeout(() => {
+                generateMonth(monthNum, attemptNum + 1);
+            }, delay);
+        } else {
+            // Max retries exceeded
+            console.error(`💀 Month ${monthNum} failed after ${MAX_RETRIES} attempts`);
+            failedCount++;
+            failedMonths.add(monthNum);
+            updateBadge(monthNum, 'failed');
+        }
     } finally {
         activeRequests--;
-        processQueue(); // Start next month in queue
+        checkCompletion();
     }
 }
 
-function processQueue() {
-    // Start next months if we have capacity and items in queue
-    while (activeRequests < MAX_PARALLEL && monthQueue.length > 0) {
-        const nextMonth = monthQueue.shift();
-        generateMonth(nextMonth);
-    }
+function checkCompletion() {
+    // Check if ALL requests are done (including retries)
+    if (activeRequests === 0) {
+        const totalDone = completedCount + failedMonths.size;
 
-    // Check if we're done
-    if (activeRequests === 0 && monthQueue.length === 0) {
-        if (completedCount + failedCount >= 12) {
-            console.log(`🎉 Generation complete! ${completedCount} succeeded, ${failedCount} failed`);
+        if (totalDone >= 12) {
+            console.log(`🎉 Generation complete! ${completedCount} succeeded, ${failedMonths.size} failed`);
+
+            if (failedMonths.size > 0) {
+                console.error(`⚠️ Failed months: ${Array.from(failedMonths).join(', ')}`);
+                alert(`⚠️ Warning: ${failedMonths.size} month(s) failed to generate after ${MAX_RETRIES} attempts. Proceeding to preview with ${completedCount} successful months.`);
+            }
+
             setTimeout(() => {
                 window.location.href = '{{ url_for("projects.preview") }}';
             }, 1500);
@@ -158,23 +189,26 @@ function processQueue() {
     }
 }
 
-// Initialize: Build queue of months to generate
+// Initialize: Start generating all pending months
 function startGeneration() {
-    monthQueue = [];
+    const pendingMonths = [];
 
-    // Add all pending months to queue
+    // Find all pending months
     for (let i = 1; i <= 12; i++) {
         const monthData = months.find(m => m.month_number === i);
         if (!monthData || monthData.generation_status !== 'completed') {
-            monthQueue.push(i);
+            pendingMonths.push(i);
         }
     }
 
-    console.log(`📋 Queue: ${monthQueue.length} months to generate`);
-    console.log(`⚡ Generating ${MAX_PARALLEL} months in parallel for faster completion!`);
+    console.log(`📋 Generating ${pendingMonths.length} months`);
+    console.log(`⚡ MAXIMUM SPEED: All ${pendingMonths.length} months in parallel!`);
+    console.log(`🔄 Auto-retry enabled: Up to ${MAX_RETRIES} attempts per month`);
 
-    // Start processing queue
-    processQueue();
+    // Start ALL months simultaneously
+    pendingMonths.forEach(monthNum => {
+        generateMonth(monthNum);
+    });
 }
 
 // Initialize progress
@@ -182,7 +216,7 @@ updateProgress();
 
 // Check if we need to start generation
 if (completedCount < 12) {
-    console.log('🚀 Starting PARALLEL AI generation...');
+    console.log('🚀 Starting MAXIMUM PARALLEL AI generation...');
     setTimeout(startGeneration, 1000);
 } else {
     // All already complete, redirect
