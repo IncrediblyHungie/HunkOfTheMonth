@@ -58,6 +58,7 @@
                             <a href="{{ url_for('api.get_month_image', month_id=month.id) }}"
                                data-toggle="lightbox"
                                data-gallery="calendar-gallery"
+                               data-size="fullscreen"
                                data-caption="{{ month_names[month.month_number - 1] }}: {{ month.prompt }}">
                                 <img src="{{ url_for('api.get_month_image', month_id=month.id) }}"
                                      alt="{{ month_names[month.month_number - 1] }}"
@@ -122,6 +123,69 @@ document.addEventListener('DOMContentLoaded', () => {
             behavior: 'smooth'
         });
     }
+
+    // Configure bs5-lightbox to disable constrain (allow images to scale larger)
+    Lightbox.initialize({
+        constrain: false  // Allow images to scale up to fill available space
+    });
 });
 </script>
+
+<style>
+/* Optimize lightbox for portrait images (3:4 aspect ratio) */
+.lightbox .modal-dialog {
+    max-width: none !important;
+    width: auto !important;
+    height: 100%;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Make modal content fit portrait images better */
+.lightbox .modal-content {
+    background-color: rgba(0, 0, 0, 0.95) !important;
+    border: none !important;
+    width: auto !important;
+    max-width: 90vw;
+    max-height: 95vh;
+}
+
+/* Optimize image sizing for portrait orientation */
+.lightbox .modal-body {
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent !important;
+}
+
+.lightbox .modal-body img {
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain;
+    margin: auto;
+}
+
+/* Make close button and navigation more visible */
+.lightbox .btn-close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    opacity: 1 !important;
+}
+
+/* Style caption for better visibility */
+.lightbox .carousel-caption {
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    bottom: 30px;
+}
+</style>
 {% endblock %}
