@@ -16,11 +16,11 @@ GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyAXdQlDioxbG3wr9jHEaFJiIt6AB5
 def generate_calendar_image(prompt, reference_image_data_list=None):
     """
     Generate a calendar image using Google Gemini 2.5 Flash Image
-    with face-swapping from reference images
+    with seamless face blending and character consistency
 
     Args:
         prompt (str): Text description of desired hunky scene
-        reference_image_data_list (list): List of image data bytes for face reference
+        reference_image_data_list (list): List of image data bytes for character reference
 
     Returns:
         bytes: Generated image data as PNG bytes
@@ -31,17 +31,22 @@ def generate_calendar_image(prompt, reference_image_data_list=None):
         # Build content array with reference images first
         content = []
 
-        # Add reference images if provided (for face consistency)
+        # Add reference images if provided (for character consistency)
         if reference_image_data_list:
-            # Add instruction about reference images
+            # Add instruction about character identity (NOT "face swap")
             ref_instruction = """
-CRITICAL: Use the person's face from the reference images below.
-Maintain their exact facial features, skin tone, eye color, facial structure, and identity.
-Put THIS PERSON'S FACE on the hunky body in the scene.
+REFERENCE IMAGES: Study the person shown in these images carefully.
+
+IDENTITY TO MAINTAIN:
+- Analyze ALL reference images to understand this exact person's facial features
+- Note their distinctive characteristics: face shape, eye color, nose shape, jawline, skin tone, hair texture
+- This is NOT a face swap - create a natural, seamless photo of THIS EXACT PERSON in the described scene
+- The person should look like a natural blend of their features across all reference images
+- Maintain their unique identity while placing them naturally in the scene
 """
             content.append(ref_instruction)
 
-            # Add up to 3 reference images for best face consistency
+            # Add up to 3 best reference images for character consistency
             for img_data in reference_image_data_list[:3]:
                 try:
                     # Load image and add to content
@@ -56,32 +61,48 @@ Put THIS PERSON'S FACE on the hunky body in the scene.
                 except Exception as e:
                     print(f"Error loading reference image: {e}")
 
-        # Enhanced prompt with face-swapping instructions
+        # Enhanced prompt with seamless blending and framing
         enhanced_prompt = f"""
 {prompt}
 
-CRITICAL REQUIREMENTS:
-- Take the FACE from the reference images above and put it on the hunky body
-- Maintain the person's facial identity, features, and likeness EXACTLY
-- Keep their eye color, skin tone, facial structure identical to reference
-- Professional photography quality, suitable for calendar printing
-- Photorealistic, high resolution, vibrant colors
-- Center the subject prominently in the frame
-- Dramatic lighting that highlights muscular physique
-- Make the scene ridiculously sexy and over-the-top hilarious
+CHARACTER CONSISTENCY (CRITICAL):
+- Create a photo of THIS EXACT PERSON (from reference images) in this scene
+- Maintain their distinctive facial features naturally and seamlessly
+- This should look like a real photo of them, not a composite or face swap
+- Keep their eye color, skin tone, facial structure, and unique characteristics
+- Blend their identity naturally into the scene
 
-Style: Professional fitness photography meets comedy photoshoot
+COMPOSITION & FRAMING (CRITICAL):
+- MEDIUM SHOT framing: Show full person from head to at least waist, preferably head to thighs
+- FULL BODY IN FRAME: Ensure entire head and upper body are completely visible
+- HEADROOM: Leave space above the head - don't crop the top of head or face
+- CENTERED COMPOSITION: Subject prominently centered with proper framing
+- Use 85mm portrait lens perspective for flattering body proportions
+- Professional fitness photography composition
+
+VISUAL QUALITY:
+- Photorealistic, professional photography quality
+- High resolution, suitable for calendar printing
+- Vibrant colors, dramatic lighting that highlights muscular physique
+- Dynamic pose that's ridiculously sexy and over-the-top hilarious
+- Cinematic lighting with clear focus on subject
+
+Style: Professional fitness/glamour photography meets comedy photoshoot - natural, seamless, hilarious
 """
 
         content.append(enhanced_prompt)
 
         # Generate the image using Gemini 2.5 Flash Image (Nano Banana)
+        # Use 3:4 aspect ratio (portrait) for better full-body framing
         response = client.models.generate_content(
             model='gemini-2.5-flash-image',
             contents=content,
             config=types.GenerateContentConfig(
                 response_modalities=['IMAGE'],
-                temperature=0.8,  # Higher for creative hunky scenes
+                temperature=0.7,  # Balanced for consistency and creativity
+                image_config=types.ImageConfig(
+                    aspect_ratio='3:4'  # Portrait orientation for full person visibility
+                )
             )
         )
 
