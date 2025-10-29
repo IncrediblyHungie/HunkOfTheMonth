@@ -3,8 +3,7 @@ Project routes - Upload, prompts, preview, checkout
 """
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.utils import secure_filename
-from app import db
-from app.models import CalendarProject, UploadedImage, CalendarMonth, Order
+from app import session_storage
 from app.routes.main import get_current_project
 from app.services.monthly_themes import get_all_themes, get_theme, get_enhanced_prompt
 from PIL import Image
@@ -36,25 +35,22 @@ def upload():
                     img.save(thumb_io, format='JPEG')
                     thumb_data = thumb_io.getvalue()
 
-                    # Save to database
-                    uploaded_img = UploadedImage(
-                        project_id=project.id,
-                        filename=secure_filename(file.filename),
-                        file_data=img_data,
-                        thumbnail_data=thumb_data
+                    # Save to session storage
+                    session_storage.add_uploaded_image(
+                        secure_filename(file.filename),
+                        img_data,
+                        thumb_data
                     )
-                    db.session.add(uploaded_img)
 
-            db.session.commit()
             flash(f'{len(files)} photos uploaded successfully!', 'success')
 
         # Check if enough photos
-        photo_count = UploadedImage.query.filter_by(project_id=project.id).count()
-        if photo_count >= 3:  # Minimum 3 photos
+        images = session_storage.get_uploaded_images()
+        if len(images) >= 3:  # Minimum 3 photos
             return redirect(url_for('projects.themes'))
 
     # Get uploaded images
-    images = UploadedImage.query.filter_by(project_id=project.id).all()
+    images = session_storage.get_uploaded_images()
 
     return render_template('upload.html', project=project, images=images)
 
@@ -66,8 +62,8 @@ def themes():
         return redirect(url_for('main.start'))
 
     # Check if user uploaded photos
-    photo_count = UploadedImage.query.filter_by(project_id=project.id).count()
-    if photo_count < 3:
+    images = session_storage.get_uploaded_images()
+    if len(images) < 3:
         flash('Please upload at least 3 photos first!', 'warning')
         return redirect(url_for('projects.upload'))
 
@@ -75,34 +71,14 @@ def themes():
         try:
             # Auto-create months with pre-defined themes
             all_themes = get_all_themes()
+            session_storage.create_months_with_themes(all_themes)
 
-            for month_num in range(1, 13):
-                theme = all_themes[month_num]
-
-                # Create or update month record
-                month = CalendarMonth.query.filter_by(
-                    project_id=project.id,
-                    month_number=month_num
-                ).first()
-
-                if not month:
-                    month = CalendarMonth(
-                        project_id=project.id,
-                        month_number=month_num,
-                        prompt=theme['title']  # Store theme title
-                    )
-                    db.session.add(month)
-                else:
-                    month.prompt = theme['title']
-
-            project.status = 'prompts'
-            db.session.commit()
+            session_storage.update_project_status('prompts')
 
             flash('Themes confirmed! Ready to make you a hunk!', 'success')
             return redirect(url_for('projects.generate'))
 
         except Exception as e:
-            db.session.rollback()
             flash(f'Error setting up themes: {str(e)}', 'danger')
             return redirect(url_for('projects.themes'))
 
@@ -119,34 +95,27 @@ def generate():
         return redirect(url_for('main.start'))
 
     # Check if themes are confirmed
-    month_count = CalendarMonth.query.filter_by(project_id=project.id).count()
-    if month_count < 12:
+    months = session_storage.get_all_months()
+    if len(months) < 12:
         flash('Please review the monthly themes first!', 'warning')
         return redirect(url_for('projects.themes'))
 
     # Check if we have reference images
-    photo_count = UploadedImage.query.filter_by(project_id=project.id).count()
-    if photo_count < 3:
+    images = session_storage.get_uploaded_images()
+    if len(images) < 3:
         flash('Please upload at least 3 photos first!', 'warning')
         return redirect(url_for('projects.upload'))
 
     try:
-        # Mark all months as pending (ready to generate)
-        months = CalendarMonth.query.filter_by(project_id=project.id).all()
-        for month in months:
-            month.generation_status = 'pending'
-
         # Mark project as processing
-        project.status = 'processing'
-        db.session.commit()
+        session_storage.update_project_status('processing')
 
         flash('Starting AI generation with face-swapping... This will take 5-10 minutes.', 'info')
 
-        # Redirect immediately to generating page (AJAX will handle actual generation)
+        # Redirect immediately to preview page (AJAX will handle actual generation)
         return redirect(url_for('projects.preview'))
 
     except Exception as e:
-        db.session.rollback()
         flash(f'Error starting generation: {str(e)}', 'danger')
         return redirect(url_for('projects.themes'))
 
@@ -157,13 +126,11 @@ def preview():
     if not project:
         return redirect(url_for('main.start'))
 
-    # Get all months
-    months = CalendarMonth.query.filter_by(
-        project_id=project.id
-    ).order_by(CalendarMonth.month_number).all()
+    # Get all months from session storage
+    months = session_storage.get_all_months()
 
     # Check if generation is complete
-    if not all(m.generation_status == 'completed' for m in months):
+    if not all(m['generation_status'] == 'completed' for m in months):
         flash('Calendar generation in progress...', 'info')
         return render_template('generating.html', project=project, months=months)
 
@@ -185,15 +152,9 @@ def checkout():
         email = request.form.get('email', '').strip()
 
         if email:
-            # Create mock order
-            order = Order(
-                project_id=project.id,
-                email=email,
-                status='coming_soon'
-            )
-            db.session.add(order)
-            project.status = 'checkout'
-            db.session.commit()
+            # Store email in session (mock order)
+            session['order_email'] = email
+            session_storage.update_project_status('checkout')
 
             flash('Thanks for your interest! Payment integration coming soon.', 'info')
             return redirect(url_for('projects.success'))

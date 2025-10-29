@@ -2,7 +2,7 @@
 API routes for AJAX calls and image serving
 """
 from flask import Blueprint, jsonify, send_file, Response
-from app.models import UploadedImage, CalendarMonth
+from app import session_storage
 from app.routes.main import get_current_project
 import io
 
@@ -15,16 +15,13 @@ def get_thumbnail(image_id):
     if not project:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    image = UploadedImage.query.filter_by(
-        id=image_id,
-        project_id=project.id
-    ).first()
+    image = session_storage.get_image_by_id(image_id)
 
-    if not image or not image.thumbnail_data:
+    if not image or not image.get('thumbnail_data'):
         return jsonify({'error': 'Image not found'}), 404
 
     return send_file(
-        io.BytesIO(image.thumbnail_data),
+        io.BytesIO(image['thumbnail_data']),
         mimetype='image/jpeg'
     )
 
@@ -35,16 +32,13 @@ def get_month_image(month_id):
     if not project:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    month = CalendarMonth.query.filter_by(
-        id=month_id,
-        project_id=project.id
-    ).first()
+    image_data = session_storage.get_month_image_data(month_id)
 
-    if not month or not month.master_image_data:
+    if not image_data:
         return jsonify({'error': 'Image not found'}), 404
 
     return send_file(
-        io.BytesIO(month.master_image_data),
+        io.BytesIO(image_data),
         mimetype='image/jpeg'
     )
 
@@ -55,21 +49,13 @@ def project_status():
     if not project:
         return jsonify({'error': 'No active project'}), 404
 
-    # Get generation status
-    months = CalendarMonth.query.filter_by(project_id=project.id).all()
-    month_status = []
-
-    for month in months:
-        month_status.append({
-            'month_number': month.month_number,
-            'status': month.generation_status,
-            'prompt': month.prompt
-        })
+    # Get generation status from session
+    months = session_storage.get_all_months()
 
     return jsonify({
-        'project_id': project.id,
-        'status': project.status,
-        'months': month_status
+        'project_id': project['id'],
+        'status': project['status'],
+        'months': months
     })
 
 @bp.route('/delete/image/<int:image_id>', methods=['POST'])
@@ -79,28 +65,18 @@ def delete_image(image_id):
     if not project:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    image = UploadedImage.query.filter_by(
-        id=image_id,
-        project_id=project.id
-    ).first()
-
-    if not image:
-        return jsonify({'error': 'Image not found'}), 404
-
-    from app import db
-    db.session.delete(image)
-    db.session.commit()
+    session_storage.delete_image(image_id)
 
     return jsonify({'success': True})
 
 @bp.route('/generate/month/<int:month_num>', methods=['POST'])
 def generate_month(month_num):
     """Generate a single month's image with AI face-swapping"""
-    from app import db
     from app.services.gemini_service import generate_calendar_image
     from app.services.monthly_themes import get_enhanced_prompt
     from PIL import Image as PILImage
     import io
+    import base64
 
     project = get_current_project()
     if not project:
@@ -110,17 +86,14 @@ def generate_month(month_num):
         return jsonify({'error': 'Invalid month number'}), 400
 
     try:
-        # Get the month record
-        month = CalendarMonth.query.filter_by(
-            project_id=project.id,
-            month_number=month_num
-        ).first()
+        # Get the month record from session
+        month = session_storage.get_month_by_number(month_num)
 
         if not month:
             return jsonify({'error': 'Month not found'}), 404
 
         # Check if already completed
-        if month.generation_status == 'completed':
+        if month['generation_status'] == 'completed':
             return jsonify({
                 'success': True,
                 'status': 'completed',
@@ -128,20 +101,17 @@ def generate_month(month_num):
             })
 
         # Mark as processing
-        month.generation_status = 'processing'
-        db.session.commit()
+        session_storage.update_month_status(month_num, 'processing')
 
         # Get enhanced prompt for this month
         enhanced_prompt = get_enhanced_prompt(month_num)
 
         # Get reference images for face-swapping
-        uploaded_images = UploadedImage.query.filter_by(project_id=project.id).all()
-        reference_image_data = [img.file_data for img in uploaded_images]
+        uploaded_images = session_storage.get_uploaded_images()
+        reference_image_data = [base64.b64decode(img['file_data']) for img in uploaded_images]
 
         if not reference_image_data:
-            month.generation_status = 'failed'
-            month.error_message = 'No reference images found'
-            db.session.commit()
+            session_storage.update_month_status(month_num, 'failed', error='No reference images found')
             return jsonify({'error': 'No reference images'}), 400
 
         # Generate the image with AI
@@ -153,12 +123,8 @@ def generate_month(month_num):
         img.convert('RGB').save(img_io, format='JPEG', quality=95)
         jpeg_data = img_io.getvalue()
 
-        # Save to database
-        month.master_image_data = jpeg_data
-        month.generation_status = 'completed'
-        from datetime import datetime
-        month.generated_at = datetime.utcnow()
-        db.session.commit()
+        # Save to session storage
+        session_storage.update_month_status(month_num, 'completed', image_data=jpeg_data)
 
         return jsonify({
             'success': True,
@@ -170,10 +136,7 @@ def generate_month(month_num):
 
     except Exception as e:
         # Mark as failed
-        if month:
-            month.generation_status = 'failed'
-            month.error_message = str(e)
-            db.session.commit()
+        session_storage.update_month_status(month_num, 'failed', error=str(e))
 
         return jsonify({
             'success': False,
