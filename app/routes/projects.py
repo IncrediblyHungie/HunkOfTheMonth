@@ -113,7 +113,7 @@ def themes():
 
 @bp.route('/generate')
 def generate():
-    """Start REAL AI generation with face-swapping"""
+    """Start AI generation - redirect immediately to avoid timeout"""
     project = get_current_project()
     if not project:
         return redirect(url_for('main.start'))
@@ -124,43 +124,30 @@ def generate():
         flash('Please review the monthly themes first!', 'warning')
         return redirect(url_for('projects.themes'))
 
-    # REAL AI Generation with Gemini 2.5 Flash Image
+    # Check if we have reference images
+    photo_count = UploadedImage.query.filter_by(project_id=project.id).count()
+    if photo_count < 3:
+        flash('Please upload at least 3 photos first!', 'warning')
+        return redirect(url_for('projects.upload'))
+
     try:
-        from app.services.gemini_service import generate_calendar_images_batch
-
-        # Get months and build enhanced prompts
-        months = CalendarMonth.query.filter_by(project_id=project.id).order_by(CalendarMonth.month_number).all()
-
-        # Use pre-defined themes with enhanced prompts
-        prompts = {}
-        for m in months:
-            enhanced = get_enhanced_prompt(m.month_number)
-            prompts[m.month_number] = enhanced if enhanced else m.prompt
-
-        # Get reference images for face-swapping
-        uploaded_images = UploadedImage.query.filter_by(project_id=project.id).all()
-        reference_image_data = [img.file_data for img in uploaded_images]
-
-        if not reference_image_data:
-            flash('No reference images found! Please upload photos first.', 'danger')
-            return redirect(url_for('projects.upload'))
+        # Mark all months as pending (ready to generate)
+        months = CalendarMonth.query.filter_by(project_id=project.id).all()
+        for month in months:
+            month.generation_status = 'pending'
 
         # Mark project as processing
         project.status = 'processing'
         db.session.commit()
 
-        flash('Starting AI generation with face-swapping... Transforming you into 12 hunks! This will take 5-10 minutes.', 'info')
+        flash('Starting AI generation with face-swapping... This will take 5-10 minutes.', 'info')
 
-        # Generate all 12 months with REAL AI (synchronous for now)
-        # In production, this should be moved to Celery background task
-        generate_calendar_images_batch(project.id, prompts, reference_image_data)
-
-        # Redirect to preview page
+        # Redirect immediately to generating page (AJAX will handle actual generation)
         return redirect(url_for('projects.preview'))
 
     except Exception as e:
         db.session.rollback()
-        flash(f'Error starting AI generation: {str(e)}', 'danger')
+        flash(f'Error starting generation: {str(e)}', 'danger')
         return redirect(url_for('projects.themes'))
 
 @bp.route('/preview')

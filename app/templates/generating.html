@@ -38,7 +38,8 @@
                                     {% if month.generation_status == 'completed' %}bg-success
                                     {% elif month.generation_status == 'processing' %}bg-warning
                                     {% elif month.generation_status == 'failed' %}bg-danger
-                                    {% else %}bg-secondary{% endif %}">
+                                    {% else %}bg-secondary{% endif %}"
+                                    data-month="{{ month.month_number }}">
                                     {{ month.month_number }}
                                     {% if month.generation_status == 'completed' %}
                                         <i class="fas fa-check"></i>
@@ -68,19 +69,102 @@
 
 {% block extra_scripts %}
 <script>
-// Auto-refresh every 30 seconds
-setTimeout(() => {
-    location.reload();
-}, 30000);
-
-// Calculate progress
+// Progressive AI generation - one month at a time
 const months = {{ months | tojson }};
-const completed = months.filter(m => m.generation_status === 'completed').length;
+let currentMonth = 1;
+let completedCount = months.filter(m => m.generation_status === 'completed').length;
+let failedCount = 0;
+
 const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
-const percentage = (completed / 12) * 100;
 
-progressBar.style.width = percentage + '%';
-progressText.textContent = `${completed}/12 months`;
+function updateProgress() {
+    const percentage = (completedCount / 12) * 100;
+    progressBar.style.width = percentage + '%';
+    progressText.textContent = `${completedCount}/12 months`;
+}
+
+async function generateNextMonth() {
+    if (currentMonth > 12) {
+        // All months processed, redirect to preview
+        console.log('All months complete! Redirecting to preview...');
+        window.location.href = '{{ url_for("projects.preview") }}';
+        return;
+    }
+
+    // Check if this month is already completed
+    const monthData = months.find(m => m.month_number === currentMonth);
+    if (monthData && monthData.generation_status === 'completed') {
+        console.log(`Month ${currentMonth} already completed, skipping...`);
+        currentMonth++;
+        setTimeout(generateNextMonth, 100);
+        return;
+    }
+
+    console.log(`Generating month ${currentMonth}/12...`);
+
+    try {
+        const response = await fetch(`/api/generate/month/${currentMonth}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.status === 'completed') {
+            console.log(`✅ Month ${currentMonth} completed!`);
+            completedCount++;
+            updateProgress();
+
+            // Update the month badge
+            const badge = document.querySelector(`[data-month="${currentMonth}"]`);
+            if (badge) {
+                badge.classList.remove('bg-secondary', 'bg-warning');
+                badge.classList.add('bg-success');
+                badge.innerHTML = `${currentMonth} <i class="fas fa-check"></i>`;
+            }
+        } else {
+            console.error(`❌ Month ${currentMonth} failed:`, data.error);
+            failedCount++;
+
+            // Update the month badge
+            const badge = document.querySelector(`[data-month="${currentMonth}"]`);
+            if (badge) {
+                badge.classList.remove('bg-secondary', 'bg-warning');
+                badge.classList.add('bg-danger');
+                badge.innerHTML = `${currentMonth} <i class="fas fa-times"></i>`;
+            }
+        }
+
+        // Move to next month
+        currentMonth++;
+
+        // Wait 2 seconds between generations (rate limiting)
+        setTimeout(generateNextMonth, 2000);
+
+    } catch (error) {
+        console.error(`Error generating month ${currentMonth}:`, error);
+        failedCount++;
+        currentMonth++;
+
+        // Retry next month after delay
+        setTimeout(generateNextMonth, 3000);
+    }
+}
+
+// Initialize progress
+updateProgress();
+
+// Check if we need to start generation
+if (completedCount < 12) {
+    console.log('Starting progressive AI generation...');
+    // Wait 1 second before starting
+    setTimeout(generateNextMonth, 1000);
+} else {
+    // All already complete, redirect
+    window.location.href = '{{ url_for("projects.preview") }}';
+}
 </script>
 {% endblock %}

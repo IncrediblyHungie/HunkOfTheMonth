@@ -92,3 +92,92 @@ def delete_image(image_id):
     db.session.commit()
 
     return jsonify({'success': True})
+
+@bp.route('/generate/month/<int:month_num>', methods=['POST'])
+def generate_month(month_num):
+    """Generate a single month's image with AI face-swapping"""
+    from app import db
+    from app.services.gemini_service import generate_calendar_image
+    from app.services.monthly_themes import get_enhanced_prompt
+    from PIL import Image as PILImage
+    import io
+
+    project = get_current_project()
+    if not project:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if month_num < 1 or month_num > 12:
+        return jsonify({'error': 'Invalid month number'}), 400
+
+    try:
+        # Get the month record
+        month = CalendarMonth.query.filter_by(
+            project_id=project.id,
+            month_number=month_num
+        ).first()
+
+        if not month:
+            return jsonify({'error': 'Month not found'}), 404
+
+        # Check if already completed
+        if month.generation_status == 'completed':
+            return jsonify({
+                'success': True,
+                'status': 'completed',
+                'message': f'Month {month_num} already generated'
+            })
+
+        # Mark as processing
+        month.generation_status = 'processing'
+        db.session.commit()
+
+        # Get enhanced prompt for this month
+        enhanced_prompt = get_enhanced_prompt(month_num)
+
+        # Get reference images for face-swapping
+        uploaded_images = UploadedImage.query.filter_by(project_id=project.id).all()
+        reference_image_data = [img.file_data for img in uploaded_images]
+
+        if not reference_image_data:
+            month.generation_status = 'failed'
+            month.error_message = 'No reference images found'
+            db.session.commit()
+            return jsonify({'error': 'No reference images'}), 400
+
+        # Generate the image with AI
+        image_data = generate_calendar_image(enhanced_prompt, reference_image_data)
+
+        # Convert PNG to JPEG for smaller file size
+        img = PILImage.open(io.BytesIO(image_data))
+        img_io = io.BytesIO()
+        img.convert('RGB').save(img_io, format='JPEG', quality=95)
+        jpeg_data = img_io.getvalue()
+
+        # Save to database
+        month.master_image_data = jpeg_data
+        month.generation_status = 'completed'
+        from datetime import datetime
+        month.generated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'status': 'completed',
+            'month': month_num,
+            'message': f'Month {month_num} generated successfully',
+            'image_size': len(jpeg_data)
+        })
+
+    except Exception as e:
+        # Mark as failed
+        if month:
+            month.generation_status = 'failed'
+            month.error_message = str(e)
+            db.session.commit()
+
+        return jsonify({
+            'success': False,
+            'status': 'failed',
+            'month': month_num,
+            'error': str(e)
+        }), 500
