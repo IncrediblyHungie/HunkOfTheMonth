@@ -147,7 +147,7 @@ def generate():
             mock_img_data = img_io.getvalue()
 
             # Store mock image
-            month.generated_image_data = mock_img_data
+            month.master_image_data = mock_img_data
             month.generation_status = 'completed'
 
         project.status = 'preview'

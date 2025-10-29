@@ -45,7 +45,7 @@ def get_month_image(month_id):
 
     return send_file(
         io.BytesIO(month.master_image_data),
-        mimetype='image/png'
+        mimetype='image/jpeg'
     )
 
 @bp.route('/project/status')
