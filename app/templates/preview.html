@@ -125,14 +125,106 @@
 
 {% block extra_scripts %}
 <script>
-// Smooth scroll to calendar on page load
+// Preload all month images in background for instant modal display
+const monthImages = {};
+const imageUrls = [
+    {% for month in months %}
+    { id: {{ month.id }}, url: "{{ url_for('api.get_month_image', month_id=month.id) }}" }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+// Preload images in background
 window.addEventListener('load', () => {
+    // Smooth scroll to calendar
     if (window.location.hash === '') {
         window.scrollTo({
             top: 300,
             behavior: 'smooth'
         });
     }
+
+    // Preload all images for instant modal display
+    console.log('🖼️  Preloading images for faster preview...');
+    imageUrls.forEach(({ id, url }) => {
+        const img = new Image();
+        img.onload = () => {
+            monthImages[id] = img;
+            console.log(`✅ Preloaded month ${id}`);
+        };
+        img.onerror = () => {
+            console.error(`❌ Failed to preload month ${id}`);
+        };
+        img.src = url;
+    });
+});
+
+// Show loading spinner when modal opens, hide when image loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Add event listeners to all modals
+    const modals = document.querySelectorAll('.modal');
+
+    modals.forEach(modal => {
+        modal.addEventListener('show.bs.modal', (event) => {
+            // Find the image in this modal
+            const img = modal.querySelector('.modal-body img');
+            if (!img) return;
+
+            // Add loading class to modal body
+            const modalBody = modal.querySelector('.modal-body');
+            modalBody.classList.add('loading-image');
+
+            // Create loading spinner if it doesn't exist
+            if (!modalBody.querySelector('.image-loading-spinner')) {
+                const spinner = document.createElement('div');
+                spinner.className = 'image-loading-spinner';
+                spinner.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x text-primary"></i>';
+                modalBody.insertBefore(spinner, img);
+            }
+
+            // Hide image initially
+            img.style.opacity = '0';
+
+            // Show image when loaded (might be instant if preloaded)
+            if (img.complete) {
+                // Already loaded
+                modalBody.classList.remove('loading-image');
+                img.style.opacity = '1';
+            } else {
+                img.onload = () => {
+                    modalBody.classList.remove('loading-image');
+                    img.style.opacity = '1';
+                };
+            }
+        });
+    });
 });
 </script>
+
+<style>
+/* Loading spinner styles */
+.modal-body.loading-image {
+    position: relative;
+    min-height: 400px;
+}
+
+.image-loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+.modal-body.loading-image .image-loading-spinner {
+    display: block;
+}
+
+.modal-body:not(.loading-image) .image-loading-spinner {
+    display: none;
+}
+
+.modal-body img {
+    transition: opacity 0.3s ease-in-out;
+}
+</style>
 {% endblock %}

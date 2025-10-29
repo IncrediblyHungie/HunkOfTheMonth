@@ -117,9 +117,10 @@ def generate_month(month_num):
         image_data = generate_calendar_image(enhanced_prompt, reference_image_data)
 
         # Convert PNG to JPEG for smaller file size
+        # Quality 85 is sweet spot: great visual quality, 40-50% smaller files
         img = PILImage.open(io.BytesIO(image_data))
         img_io = io.BytesIO()
-        img.convert('RGB').save(img_io, format='JPEG', quality=95)
+        img.convert('RGB').save(img_io, format='JPEG', quality=85, optimize=True)
         jpeg_data = img_io.getvalue()
 
         # Save to session storage
