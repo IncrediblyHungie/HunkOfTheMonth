@@ -17,7 +17,7 @@ Pillow==10.1.0
 opencv-python-headless==4.8.1.78
 
 # Google Gemini AI
-google-generativeai==0.3.2
+google-genai>=0.6.0
 
 # Environment
 python-dotenv==1.0.0

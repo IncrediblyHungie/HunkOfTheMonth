@@ -113,7 +113,7 @@ def themes():
 
 @bp.route('/generate')
 def generate():
-    """Start AI generation"""
+    """Start REAL AI generation with face-swapping"""
     project = get_current_project()
     if not project:
         return redirect(url_for('main.start'))
@@ -124,43 +124,43 @@ def generate():
         flash('Please review the monthly themes first!', 'warning')
         return redirect(url_for('projects.themes'))
 
-    # For mock version: Generate placeholder images immediately to avoid timeout
+    # REAL AI Generation with Gemini 2.5 Flash Image
     try:
-        # Get months and create mock images for each
+        from app.services.gemini_service import generate_calendar_images_batch
+
+        # Get months and build enhanced prompts
         months = CalendarMonth.query.filter_by(project_id=project.id).order_by(CalendarMonth.month_number).all()
 
-        # Get all themes for descriptions
-        all_themes = get_all_themes()
+        # Use pre-defined themes with enhanced prompts
+        prompts = {}
+        for m in months:
+            enhanced = get_enhanced_prompt(m.month_number)
+            prompts[m.month_number] = enhanced if enhanced else m.prompt
 
-        for month in months:
-            # Create a mock placeholder image with theme info
-            theme = all_themes[month.month_number]
-            mock_img = Image.new('RGB', (800, 1000), color=(
-                (month.month_number * 20) % 255,  # R
-                (month.month_number * 40) % 255,  # G
-                (month.month_number * 60) % 255   # B
-            ))
+        # Get reference images for face-swapping
+        uploaded_images = UploadedImage.query.filter_by(project_id=project.id).all()
+        reference_image_data = [img.file_data for img in uploaded_images]
 
-            # Save mock image to bytes
-            img_io = io.BytesIO()
-            mock_img.save(img_io, format='JPEG')
-            mock_img_data = img_io.getvalue()
+        if not reference_image_data:
+            flash('No reference images found! Please upload photos first.', 'danger')
+            return redirect(url_for('projects.upload'))
 
-            # Store mock image
-            month.master_image_data = mock_img_data
-            month.generation_status = 'completed'
-
-        project.status = 'preview'
+        # Mark project as processing
+        project.status = 'processing'
         db.session.commit()
 
-        flash('Mock calendar generated! (AI generation will be enabled in production)', 'success')
+        flash('Starting AI generation with face-swapping... Transforming you into 12 hunks! This will take 5-10 minutes.', 'info')
+
+        # Generate all 12 months with REAL AI (synchronous for now)
+        # In production, this should be moved to Celery background task
+        generate_calendar_images_batch(project.id, prompts, reference_image_data)
 
         # Redirect to preview page
         return redirect(url_for('projects.preview'))
 
     except Exception as e:
         db.session.rollback()
-        flash(f'Error starting generation: {str(e)}', 'danger')
+        flash(f'Error starting AI generation: {str(e)}', 'danger')
         return redirect(url_for('projects.themes'))
 
 @bp.route('/preview')
