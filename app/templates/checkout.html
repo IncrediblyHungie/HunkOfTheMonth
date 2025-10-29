@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="card-title mb-4 text-center">
+                        <i class="fas fa-shopping-cart text-success me-2"></i>
+                        Order Your Calendar
+                    </h2>
+
+                    <!-- Coming Soon Alert -->
+                    <div class="alert alert-warning text-center" role="alert">
+                        <i class="fas fa-construction fa-2x mb-3 d-block"></i>
+                        <h4 class="alert-heading">Payment Integration Coming Soon!</h4>
+                        <p class="mb-3">
+                            We're currently setting up our payment system with Stripe.
+                            Leave your email below and we'll notify you when ordering is available!
+                        </p>
+                        <hr>
+                        <p class="mb-0 small">
+                            Expected pricing: <strong>$39.99 - $49.99</strong> including shipping
+                        </p>
+                    </div>
+
+                    <!-- Email Notification Form -->
+                    <form method="POST" class="mt-4">
+                        <div class="mb-4">
+                            <label for="email" class="form-label fw-bold">
+                                <i class="fas fa-envelope me-2"></i>
+                                Email Address
+                            </label>
+                            <input
+                                type="email"
+                                class="form-control form-control-lg"
+                                id="email"
+                                name="email"
+                                placeholder="your@email.com"
+                                required
+                            >
+                            <div class="form-text">
+                                We'll send you an email when ordering is available (within 1-2 weeks)
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-bell me-2"></i>
+                                Notify Me When Ready
+                            </button>
+                            <a href="{{ url_for('projects.preview') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Preview
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Features -->
+                    <div class="mt-5 pt-4 border-top">
+                        <h5 class="mb-3">What You'll Get:</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                High-quality printed calendar (multiple size options)
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                All 12 AI-generated images in stunning detail
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Premium paper stock suitable for framing
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Fast shipping to your door (5-7 business days)
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Money-back guarantee if not satisfied
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

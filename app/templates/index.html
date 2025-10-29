@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6 text-center text-lg-start mb-4 mb-lg-0">
+                <h1 class="display-3 fw-bold mb-4">Create Your AI-Powered Calendar</h1>
+                <p class="lead mb-4">
+                    Transform your selfies into 12 stunning AI-generated images.
+                    See your completed calendar <strong>FREE</strong>, then order your print!
+                </p>
+
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <span>Upload your photos</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <span>Write creative prompts</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <span>Preview FREE - pay only if you love it!</span>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('main.start') }}" class="btn btn-primary btn-lg px-5 py-3">
+                    <i class="fas fa-magic me-2"></i>
+                    Start Creating Now
+                </a>
+
+                <p class="text-muted mt-3 small">
+                    <i class="fas fa-lock me-1"></i>
+                    No account required • FREE preview • 24-hour session
+                </p>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="calendar-mockup">
+                    <div class="card shadow-lg">
+                        <div class="card-body">
+                            <h3 class="text-center mb-4">Example Calendar</h3>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Jan</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Feb</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Mar</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Apr</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">May</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Jun</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Jul</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Aug</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Sep</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Oct</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Nov</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="calendar-preview-box">Dec</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="how-it-works-section py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">How It Works</h2>
+
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="step-icon mb-3">
+                            <i class="fas fa-upload fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">1. Upload Photos</h5>
+                        <p class="card-text">Upload 5-10 selfies for AI reference</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="step-icon mb-3">
+                            <i class="fas fa-pen fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">2. Write Prompts</h5>
+                        <p class="card-text">Describe 12 creative scenes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="step-icon mb-3">
+                            <i class="fas fa-magic fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">3. AI Generates</h5>
+                        <p class="card-text">Wait 5-10 minutes for magic</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="step-icon mb-3">
+                            <i class="fas fa-shopping-cart fa-3x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">4. Order Print</h5>
+                        <p class="card-text">Love it? Order your calendar!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{{ url_for('main.start') }}" class="btn btn-primary btn-lg px-5">
+                Get Started - It's Free!
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="features-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 text-center mb-4">
+                <i class="fas fa-robot fa-3x text-primary mb-3"></i>
+                <h4>AI-Powered</h4>
+                <p>Google's Gemini 2.5 Flash creates photorealistic images from your prompts</p>
+            </div>
+            <div class="col-md-4 text-center mb-4">
+                <i class="fas fa-eye fa-3x text-primary mb-3"></i>
+                <h4>Preview First</h4>
+                <p>See your complete calendar before spending a penny</p>
+            </div>
+            <div class="col-md-4 text-center mb-4">
+                <i class="fas fa-shipping-fast fa-3x text-primary mb-3"></i>
+                <h4>Fast Shipping</h4>
+                <p>High-quality print delivered to your door (coming soon!)</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

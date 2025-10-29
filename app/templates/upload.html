@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Photos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Progress Steps -->
+            <div class="progress-steps mb-5">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Upload Photos</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Write Prompts</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Generate</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Preview</div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="card-title mb-4">
+                        <i class="fas fa-upload text-primary me-2"></i>
+                        Upload Your Selfies
+                    </h2>
+
+                    <p class="lead mb-4">
+                        Upload 3-10 photos of yourself. The AI will use these as reference to create your personalized calendar images.
+                    </p>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Tips for best results:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Use clear, well-lit photos</li>
+                            <li>Include variety: different angles and expressions</li>
+                            <li>Close-up face shots work best</li>
+                            <li>Minimum 3 photos, up to 10 recommended</li>
+                        </ul>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-4">
+                            <label for="photos" class="form-label">Select Photos</label>
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="photos"
+                                name="photos"
+                                multiple
+                                accept="image/*"
+                                required
+                            >
+                            <div class="form-text">Accepted formats: JPG, PNG. Max 5MB per image.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-cloud-upload-alt me-2"></i>
+                            Upload Photos
+                        </button>
+                    </form>
+
+                    <!-- Uploaded Images Gallery -->
+                    {% if images %}
+                    <hr class="my-5">
+                    <h4 class="mb-3">Uploaded Photos ({{ images|length }})</h4>
+                    <div class="row g-3 mb-4">
+                        {% for image in images %}
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="upload-thumbnail-card">
+                                <img src="{{ url_for('api.get_thumbnail', image_id=image.id) }}"
+                                     alt="Uploaded photo"
+                                     class="img-fluid rounded">
+                                <button type="button"
+                                        class="btn btn-sm btn-danger delete-image-btn"
+                                        data-image-id="{{ image.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if images|length >= 3 %}
+                    <a href="{{ url_for('projects.prompts') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        Continue to Prompts
+                    </a>
+                    {% else %}
+                    <p class="text-muted">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Upload at least 3 photos to continue
+                    </p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Delete image handler
+document.querySelectorAll('.delete-image-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const imageId = this.dataset.imageId;
+        if (confirm('Delete this photo?')) {
+            const response = await fetch(`/api/delete/image/${imageId}`, {
+                method: 'POST'
+            });
+            if (response.ok) {
+                location.reload();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

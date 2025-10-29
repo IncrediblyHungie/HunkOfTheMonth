@@ -1,20 +1,30 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-python-multipart==0.0.9
-pillow==10.2.0
-opencv-python-headless==4.9.0.80
-numpy==1.26.3
-insightface==0.7.3
-onnxruntime==1.17.0
-python-dotenv==1.0.1
+# Core Framework
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-Cors==4.0.0
+
+# Database
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
+
+# Background Tasks
+celery==5.3.4
+redis==5.0.1
+
+# Image Processing
+Pillow==10.1.0
+opencv-python-headless==4.8.1.78
+
+# Google Gemini AI
+google-generativeai==0.3.2
+
+# Environment
+python-dotenv==1.0.0
+
+# Utilities
 requests==2.31.0
-aiofiles==23.2.1
-jinja2==3.1.3
-replicate==1.0.7
-torch==2.1.2
-torchvision==0.16.2
-diffusers==0.25.0
-transformers==4.36.2
-accelerate==0.25.0
-safetensors==0.4.1
-xformers==0.0.23.post1
+gunicorn==21.2.0
+
+# Date/Time
+python-dateutil==2.8.2

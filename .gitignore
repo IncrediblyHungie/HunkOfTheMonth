@@ -1,35 +1,78 @@
 # Python
-venv/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-*.egg-info/
-dist/
+venv/
+env/
+ENV/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Flask
+instance/
+.webassets-cache
 
 # Environment
 .env
 key.txt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+calendar.db
 
 # Uploads and output
 uploads/*
 !uploads/.gitkeep
 output/*
 !output/.gitkeep
+static/uploads/
 
 # Models
 models/*
 !models/.gitkeep
 !models/download_models.py
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Migration
+migrations/versions/
+
+# Railway
+.railway/

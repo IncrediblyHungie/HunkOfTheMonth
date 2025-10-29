@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h1 class="card-title text-center mb-5">About Hunk of the Month</h1>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <h3>
+                                <i class="fas fa-magic text-primary me-2"></i>
+                                The Technology
+                            </h3>
+                            <p>
+                                We use Google's cutting-edge <strong>Gemini 2.5 Flash Image AI</strong>
+                                (nicknamed "Nano Banana") to transform your selfies and creative prompts
+                                into stunning, photorealistic calendar images.
+                            </p>
+                            <p>
+                                Each image is generated specifically for you, maintaining your facial features
+                                while placing you in exciting, creative scenarios.
+                            </p>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <h3>
+                                <i class="fas fa-heart text-danger me-2"></i>
+                                Our Mission
+                            </h3>
+                            <p>
+                                We believe everyone deserves to see themselves as the hero of their own story.
+                                Whether you're an astronaut, a cowboy, or relaxing on a beach, our AI makes it
+                                possible.
+                            </p>
+                            <p>
+                                Perfect for gifts, personal enjoyment, or just having fun with AI technology!
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr class="my-5">
+
+                    <h3 class="mb-4">
+                        <i class="fas fa-question-circle text-primary me-2"></i>
+                        Frequently Asked Questions
+                    </h3>
+
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    Is the preview really free?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes! Upload photos, enter prompts, and see your complete 12-month calendar
+                                    absolutely free. You only pay if you decide to order a printed version.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    How long does generation take?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    AI generation typically takes 5-10 minutes for all 12 months. You can close
+                                    the page and return later - your session is saved for 24 hours.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Do I need to create an account?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    No account required! We use a guest session that lasts 24 hours. Just start
+                                    creating and your progress is automatically saved in your browser.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    What happens to my photos?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Your photos are used only to generate your calendar images and are automatically
+                                    deleted after 24 hours. We take privacy seriously and never share your images.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    When can I order a printed calendar?
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    We're currently setting up our payment and printing integration. Expected launch
+                                    is within 1-2 weeks. Leave your email at checkout to be notified when it's ready!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <a href="{{ url_for('main.start') }}" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-rocket me-2"></i>
+                            Try It Now!
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

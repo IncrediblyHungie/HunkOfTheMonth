@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Generating Calendar{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="generating-animation mb-4">
+                        <i class="fas fa-magic fa-5x text-primary rotating"></i>
+                    </div>
+
+                    <h2 class="mb-4">AI is Creating Your Calendar...</h2>
+
+                    <p class="lead mb-4">
+                        This takes 5-10 minutes. Feel free to close this page and return later!
+                    </p>
+
+                    <div class="progress mb-4" style="height: 30px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                             role="progressbar"
+                             id="progressBar"
+                             style="width: 0%">
+                            <span id="progressText">0/12 months</span>
+                        </div>
+                    </div>
+
+                    <!-- Generation Status -->
+                    <div class="generation-status">
+                        <h5 class="mb-3">Generation Progress:</h5>
+                        <div class="row g-2">
+                            {% for month in months %}
+                            <div class="col-3">
+                                <div class="month-status-badge
+                                    {% if month.generation_status == 'completed' %}bg-success
+                                    {% elif month.generation_status == 'processing' %}bg-warning
+                                    {% elif month.generation_status == 'failed' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ month.month_number }}
+                                    {% if month.generation_status == 'completed' %}
+                                        <i class="fas fa-check"></i>
+                                    {% elif month.generation_status == 'processing' %}
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    {% elif month.generation_status == 'failed' %}
+                                        <i class="fas fa-times"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Check Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-refresh every 30 seconds
+setTimeout(() => {
+    location.reload();
+}, 30000);
+
+// Calculate progress
+const months = {{ months | tojson }};
+const completed = months.filter(m => m.generation_status === 'completed').length;
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const percentage = (completed / 12) * 100;
+
+progressBar.style.width = percentage + '%';
+progressText.textContent = `${completed}/12 months`;
+</script>
+{% endblock %}

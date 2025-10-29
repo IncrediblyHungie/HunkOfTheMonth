@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Enter Prompts{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Progress Steps -->
+            <div class="progress-steps mb-5">
+                <div class="step completed">
+                    <div class="step-number"><i class="fas fa-check"></i></div>
+                    <div class="step-label">Upload Photos</div>
+                </div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Write Prompts</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Generate</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Preview</div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="card-title mb-4">
+                        <i class="fas fa-pen text-primary me-2"></i>
+                        Write Your 12 Monthly Prompts
+                    </h2>
+
+                    <p class="lead mb-4">
+                        Describe what you want to see for each month. Be creative! The AI will place you in these scenarios.
+                    </p>
+
+                    <div class="alert alert-success">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Example prompts:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>"me as a confident firefighter in action"</li>
+                            <li>"me as a rugged cowboy in the desert sunset"</li>
+                            <li>"me as an astronaut exploring space"</li>
+                            <li>"me on a tropical beach at golden hour"</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST">
+                        <div class="prompts-grid">
+                            {% for i in range(1, 13) %}
+                            <div class="mb-4">
+                                <label for="prompt_{{ i }}" class="form-label fw-bold">
+                                    <i class="fas fa-calendar-day text-primary me-2"></i>
+                                    {{ month_names[i-1] }}
+                                </label>
+                                <textarea
+                                    class="form-control"
+                                    id="prompt_{{ i }}"
+                                    name="prompt_{{ i }}"
+                                    rows="2"
+                                    placeholder="Describe your {{ month_names[i-1] }} scene..."
+                                    required
+                                >{{ months[i].prompt if months[i] else '' }}</textarea>
+                                <div class="form-text">
+                                    <span id="count_{{ i }}">0</span>/200 characters
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check me-2"></i>
+                                Save Prompts & Continue
+                            </button>
+                            <a href="{{ url_for('projects.upload') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Photos
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Character counter for textareas
+document.querySelectorAll('textarea[id^="prompt_"]').forEach(textarea => {
+    const monthNum = textarea.id.split('_')[1];
+    const counter = document.getElementById(`count_${monthNum}`);
+
+    // Initial count
+    counter.textContent = textarea.value.length;
+
+    // Update on input
+    textarea.addEventListener('input', function() {
+        counter.textContent = this.value.length;
+        if (this.value.length > 200) {
+            counter.classList.add('text-danger');
+        } else {
+            counter.classList.remove('text-danger');
+        }
+    });
+});
+</script>
+{% endblock %}
