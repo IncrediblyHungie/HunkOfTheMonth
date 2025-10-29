@@ -70,8 +70,8 @@
                     </div>
                 </div>
 
-                <!-- Modal for full-size view -->
-                <div class="modal fade" id="monthModal{{ month.id }}" tabindex="-1">
+                <!-- Modal for full-size view (lazy-loaded to prevent stuck transitions) -->
+                <div class="modal fade" id="monthModal{{ month.id }}" tabindex="-1" data-image-url="{{ url_for('api.get_month_image', month_id=month.id) }}">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -79,9 +79,18 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body text-center">
-                                <img src="{{ url_for('api.get_month_image', month_id=month.id) }}"
+                                <!-- Loading spinner shown initially -->
+                                <div class="modal-image-loading">
+                                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-3">Loading image...</p>
+                                </div>
+                                <!-- Image loaded dynamically AFTER modal opens (prevents stuck transition) -->
+                                <img data-src="{{ url_for('api.get_month_image', month_id=month.id) }}"
                                      alt="{{ month_names[month.month_number - 1] }}"
-                                     class="img-fluid">
+                                     class="img-fluid modal-lazy-image"
+                                     style="display: none;">
                                 <p class="mt-3 text-muted">{{ month.prompt }}</p>
                             </div>
                         </div>
@@ -125,16 +134,8 @@
 
 {% block extra_scripts %}
 <script>
-// Preload all month images in background for instant modal display
-const monthImages = {};
-const imageUrls = [
-    {% for month in months %}
-    { id: {{ month.id }}, url: "{{ url_for('api.get_month_image', month_id=month.id) }}" }{% if not loop.last %},{% endif %}
-    {% endfor %}
-];
-
-// Preload images in background
-window.addEventListener('load', () => {
+// LAZY-LOAD images AFTER modal opens (prevents stuck transitions!)
+document.addEventListener('DOMContentLoaded', () => {
     // Smooth scroll to calendar
     if (window.location.hash === '') {
         window.scrollTo({
@@ -143,57 +144,61 @@ window.addEventListener('load', () => {
         });
     }
 
-    // Preload all images for instant modal display
-    console.log('🖼️  Preloading images for faster preview...');
-    imageUrls.forEach(({ id, url }) => {
-        const img = new Image();
-        img.onload = () => {
-            monthImages[id] = img;
-            console.log(`✅ Preloaded month ${id}`);
-        };
-        img.onerror = () => {
-            console.error(`❌ Failed to preload month ${id}`);
-        };
-        img.src = url;
-    });
-});
-
-// Show loading spinner when modal opens, hide when image loads
-document.addEventListener('DOMContentLoaded', () => {
-    // Add event listeners to all modals
+    // Add event listeners to all modals for lazy-loading
     const modals = document.querySelectorAll('.modal');
 
     modals.forEach(modal => {
-        modal.addEventListener('show.bs.modal', (event) => {
-            // Find the image in this modal
-            const img = modal.querySelector('.modal-body img');
-            if (!img) return;
+        // Use 'shown.bs.modal' - fires AFTER transition completes
+        // This prevents images from blocking the modal transition!
+        modal.addEventListener('shown.bs.modal', (event) => {
+            console.log('📸 Modal opened, loading image...');
 
-            // Add loading class to modal body
-            const modalBody = modal.querySelector('.modal-body');
-            modalBody.classList.add('loading-image');
+            const img = modal.querySelector('.modal-lazy-image');
+            const spinner = modal.querySelector('.modal-image-loading');
 
-            // Create loading spinner if it doesn't exist
-            if (!modalBody.querySelector('.image-loading-spinner')) {
-                const spinner = document.createElement('div');
-                spinner.className = 'image-loading-spinner';
-                spinner.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x text-primary"></i>';
-                modalBody.insertBefore(spinner, img);
+            if (!img || !spinner) return;
+
+            // Check if already loaded
+            if (img.src) {
+                console.log('✅ Image already loaded');
+                spinner.style.display = 'none';
+                img.style.display = 'block';
+                return;
             }
 
-            // Hide image initially
-            img.style.opacity = '0';
+            // Load image AFTER modal is fully visible
+            const imageSrc = img.getAttribute('data-src');
 
-            // Show image when loaded (might be instant if preloaded)
-            if (img.complete) {
-                // Already loaded
-                modalBody.classList.remove('loading-image');
-                img.style.opacity = '1';
-            } else {
-                img.onload = () => {
-                    modalBody.classList.remove('loading-image');
+            img.onload = () => {
+                console.log('✅ Image loaded successfully');
+                // Hide spinner, show image with fade-in
+                spinner.style.display = 'none';
+                img.style.display = 'block';
+                img.style.opacity = '0';
+                setTimeout(() => {
                     img.style.opacity = '1';
-                };
+                }, 10);
+            };
+
+            img.onerror = () => {
+                console.error('❌ Failed to load image');
+                spinner.innerHTML = '<p class="text-danger">Failed to load image</p>';
+            };
+
+            // Start loading the image
+            img.src = imageSrc;
+        });
+
+        // Reset modal when it's hidden (optional: saves memory)
+        modal.addEventListener('hidden.bs.modal', (event) => {
+            const img = modal.querySelector('.modal-lazy-image');
+            const spinner = modal.querySelector('.modal-image-loading');
+
+            if (img && spinner) {
+                // Reset for next time (optional)
+                // img.src = '';
+                // img.style.display = 'none';
+                // spinner.style.display = 'block';
             }
         });
     });
@@ -201,30 +206,25 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <style>
-/* Loading spinner styles */
-.modal-body.loading-image {
-    position: relative;
-    min-height: 400px;
+/* Modal image loading styles */
+.modal-image-loading {
+    padding: 4rem 0;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-.image-loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-}
-
-.modal-body.loading-image .image-loading-spinner {
-    display: block;
-}
-
-.modal-body:not(.loading-image) .image-loading-spinner {
-    display: none;
-}
-
-.modal-body img {
+.modal-lazy-image {
     transition: opacity 0.3s ease-in-out;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Ensure modal body has min height to prevent jump */
+.modal-body {
+    min-height: 300px;
 }
 </style>
 {% endblock %}
