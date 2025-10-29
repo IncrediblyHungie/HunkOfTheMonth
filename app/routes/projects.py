@@ -72,33 +72,39 @@ def themes():
         return redirect(url_for('projects.upload'))
 
     if request.method == 'POST':
-        # Auto-create months with pre-defined themes
-        all_themes = get_all_themes()
+        try:
+            # Auto-create months with pre-defined themes
+            all_themes = get_all_themes()
 
-        for month_num in range(1, 13):
-            theme = all_themes[month_num]
+            for month_num in range(1, 13):
+                theme = all_themes[month_num]
 
-            # Create or update month record
-            month = CalendarMonth.query.filter_by(
-                project_id=project.id,
-                month_number=month_num
-            ).first()
-
-            if not month:
-                month = CalendarMonth(
+                # Create or update month record
+                month = CalendarMonth.query.filter_by(
                     project_id=project.id,
-                    month_number=month_num,
-                    prompt=theme['title']  # Store theme title
-                )
-                db.session.add(month)
-            else:
-                month.prompt = theme['title']
+                    month_number=month_num
+                ).first()
 
-        project.status = 'prompts'
-        db.session.commit()
+                if not month:
+                    month = CalendarMonth(
+                        project_id=project.id,
+                        month_number=month_num,
+                        prompt=theme['title']  # Store theme title
+                    )
+                    db.session.add(month)
+                else:
+                    month.prompt = theme['title']
 
-        flash('Themes confirmed! Ready to make you a hunk!', 'success')
-        return redirect(url_for('projects.generate'))
+            project.status = 'prompts'
+            db.session.commit()
+
+            flash('Themes confirmed! Ready to make you a hunk!', 'success')
+            return redirect(url_for('projects.generate'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error setting up themes: {str(e)}', 'danger')
+            return redirect(url_for('projects.themes'))
 
     # Get all pre-defined themes
     all_themes = get_all_themes()
@@ -118,33 +124,42 @@ def generate():
         flash('Please review the monthly themes first!', 'warning')
         return redirect(url_for('projects.themes'))
 
-    # Start generation (synchronous for mock version)
+    # For mock version: Generate placeholder images immediately to avoid timeout
     try:
-        from app.services.gemini_service import generate_calendar_images_batch
-
-        # Get months and build enhanced prompts
+        # Get months and create mock images for each
         months = CalendarMonth.query.filter_by(project_id=project.id).order_by(CalendarMonth.month_number).all()
 
-        # Use pre-defined themes with enhanced prompts
-        prompts = {}
-        for m in months:
-            enhanced = get_enhanced_prompt(m.month_number)
-            prompts[m.month_number] = enhanced if enhanced else m.prompt
+        # Get all themes for descriptions
+        all_themes = get_all_themes()
 
-        # Get reference images
-        uploaded_images = UploadedImage.query.filter_by(project_id=project.id).all()
-        reference_image_data = [img.file_data for img in uploaded_images]
+        for month in months:
+            # Create a mock placeholder image with theme info
+            theme = all_themes[month.month_number]
+            mock_img = Image.new('RGB', (800, 1000), color=(
+                (month.month_number * 20) % 255,  # R
+                (month.month_number * 40) % 255,  # G
+                (month.month_number * 60) % 255   # B
+            ))
 
-        # Generate images (this will take 5-10 minutes)
-        flash('Starting AI generation... Transforming you into 12 hunks! This will take 5-10 minutes.', 'info')
+            # Save mock image to bytes
+            img_io = io.BytesIO()
+            mock_img.save(img_io, format='JPEG')
+            mock_img_data = img_io.getvalue()
 
-        # For production, use Celery: generate_calendar_task.delay(...)
-        # For mock, do it synchronously
-        generate_calendar_images_batch(project.id, prompts, reference_image_data)
+            # Store mock image
+            month.generated_image_data = mock_img_data
+            month.generation_status = 'completed'
 
+        project.status = 'preview'
+        db.session.commit()
+
+        flash('Mock calendar generated! (AI generation will be enabled in production)', 'success')
+
+        # Redirect to preview page
         return redirect(url_for('projects.preview'))
 
     except Exception as e:
+        db.session.rollback()
         flash(f'Error starting generation: {str(e)}', 'danger')
         return redirect(url_for('projects.themes'))
 
