@@ -1,13 +1,14 @@
 # Hunk of the Month - AI Calendar Platform
 
-Create personalized calendars with AI-generated images using Google's Gemini 2.5 Flash (Nano Banana) API.
+Transform yourself into 12 ridiculously sexy hunks with AI face-swapping! Using Google's Gemini 2.5 Flash (Nano Banana) API.
 
 ## Features
 
+- **Your Face, Hunky Bodies**: AI puts YOUR face on 12 muscular, sexy characters
+- **Hilarious Pre-Defined Themes**: From sexy firefighters to shirtless Santas
 - **Guest Sessions**: No account required - 24-hour browser sessions
-- **AI Image Generation**: Powered by Google Gemini 2.5 Flash Image API
-- **Free Preview**: See your complete calendar before paying
-- **12 Custom Months**: Upload selfies, write prompts, get personalized images
+- **Free Preview**: See all 12 transformations before paying
+- **Perfect for Gifts**: Bachelor parties, gag gifts, or just for laughs
 - **Mock Payment**: Coming soon - Stripe integration planned
 
 ## Tech Stack
@@ -160,12 +161,29 @@ HunkOfTheMonth/
 
 ## User Flow
 
-1. **Landing Page** → Click "Start Creating"
-2. **Upload Photos** → Upload 3-10 selfies
-3. **Enter Prompts** → Write 12 creative prompts
-4. **AI Generation** → Wait 5-10 minutes (can close browser)
-5. **Preview** → See completed calendar (FREE!)
+1. **Landing Page** → Click "Make Me A Hunk!"
+2. **Upload Photos** → Upload 3-10 selfies (for face recognition)
+3. **Review Themes** → See 12 pre-defined ridiculous hunk scenarios
+4. **AI Generation** → Wait 5-10 minutes for face-swapping magic
+5. **Preview** → See YOUR FACE on 12 hunky bodies (FREE!)
 6. **Checkout** → Coming soon (Stripe integration)
+
+## Monthly Themes
+
+Each month features you as a different sexy hunk in a hilarious scenario:
+
+- **January**: New Year's Firefighter (putting out fireworks with champagne)
+- **February**: Valentine's Cupid Cop (arresting with love arrows)
+- **March**: St. Patrick's Day Brawler (wrestling leprechauns)
+- **April**: Easter Bunny Lifeguard (rescuing chocolate eggs)
+- **May**: Savage Gardener (battling giant flowers)
+- **June**: Beach Whale Rescuer (saving inflatable whales)
+- **July**: Patriotic BBQ Master (grilling in flag shorts)
+- **August**: Sandcastle Construction Hunk (building epic sandcastles)
+- **September**: Hunky Teacher (taming wild school supplies)
+- **October**: Vampire Hunter (fighting inflatable decorations)
+- **November**: Turkey Wrangling Pilgrim (chasing escaped turkeys)
+- **December**: Sexy Santa (stuck in chimney, shirtless)
 
 ## API Costs
 

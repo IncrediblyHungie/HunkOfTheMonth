@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 from app import db
 from app.models import CalendarProject, UploadedImage, CalendarMonth, Order
 from app.routes.main import get_current_project
+from app.services.monthly_themes import get_all_themes, get_theme, get_enhanced_prompt
 from PIL import Image
 import io
 
@@ -50,16 +51,16 @@ def upload():
         # Check if enough photos
         photo_count = UploadedImage.query.filter_by(project_id=project.id).count()
         if photo_count >= 3:  # Minimum 3 photos
-            return redirect(url_for('projects.prompts'))
+            return redirect(url_for('projects.themes'))
 
     # Get uploaded images
     images = UploadedImage.query.filter_by(project_id=project.id).all()
 
     return render_template('upload.html', project=project, images=images)
 
-@bp.route('/prompts', methods=['GET', 'POST'])
-def prompts():
-    """Enter prompts for 12 months"""
+@bp.route('/themes', methods=['GET', 'POST'])
+def themes():
+    """Review pre-defined monthly hunk themes"""
     project = get_current_project()
     if not project:
         return redirect(url_for('main.start'))
@@ -71,48 +72,38 @@ def prompts():
         return redirect(url_for('projects.upload'))
 
     if request.method == 'POST':
-        # Save prompts
+        # Auto-create months with pre-defined themes
+        all_themes = get_all_themes()
+
         for month_num in range(1, 13):
-            prompt_text = request.form.get(f'prompt_{month_num}', '').strip()
+            theme = all_themes[month_num]
 
-            if prompt_text:
-                # Create or update month record
-                month = CalendarMonth.query.filter_by(
+            # Create or update month record
+            month = CalendarMonth.query.filter_by(
+                project_id=project.id,
+                month_number=month_num
+            ).first()
+
+            if not month:
+                month = CalendarMonth(
                     project_id=project.id,
-                    month_number=month_num
-                ).first()
-
-                if not month:
-                    month = CalendarMonth(
-                        project_id=project.id,
-                        month_number=month_num,
-                        prompt=prompt_text
-                    )
-                    db.session.add(month)
-                else:
-                    month.prompt = prompt_text
+                    month_number=month_num,
+                    prompt=theme['title']  # Store theme title
+                )
+                db.session.add(month)
+            else:
+                month.prompt = theme['title']
 
         project.status = 'prompts'
         db.session.commit()
 
-        flash('Prompts saved! Ready to generate your calendar.', 'success')
+        flash('Themes confirmed! Ready to make you a hunk!', 'success')
         return redirect(url_for('projects.generate'))
 
-    # Get existing prompts
-    months = {}
-    for month_num in range(1, 13):
-        month = CalendarMonth.query.filter_by(
-            project_id=project.id,
-            month_number=month_num
-        ).first()
-        months[month_num] = month
+    # Get all pre-defined themes
+    all_themes = get_all_themes()
 
-    month_names = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ]
-
-    return render_template('prompts.html', project=project, months=months, month_names=month_names)
+    return render_template('themes.html', project=project, themes=all_themes)
 
 @bp.route('/generate')
 def generate():
@@ -121,26 +112,31 @@ def generate():
     if not project:
         return redirect(url_for('main.start'))
 
-    # Check if prompts are complete
+    # Check if themes are confirmed
     month_count = CalendarMonth.query.filter_by(project_id=project.id).count()
     if month_count < 12:
-        flash('Please complete all 12 prompts!', 'warning')
-        return redirect(url_for('projects.prompts'))
+        flash('Please review the monthly themes first!', 'warning')
+        return redirect(url_for('projects.themes'))
 
     # Start generation (synchronous for mock version)
     try:
         from app.services.gemini_service import generate_calendar_images_batch
 
-        # Get prompts
+        # Get months and build enhanced prompts
         months = CalendarMonth.query.filter_by(project_id=project.id).order_by(CalendarMonth.month_number).all()
-        prompts = {m.month_number: m.prompt for m in months}
+
+        # Use pre-defined themes with enhanced prompts
+        prompts = {}
+        for m in months:
+            enhanced = get_enhanced_prompt(m.month_number)
+            prompts[m.month_number] = enhanced if enhanced else m.prompt
 
         # Get reference images
         uploaded_images = UploadedImage.query.filter_by(project_id=project.id).all()
         reference_image_data = [img.file_data for img in uploaded_images]
 
         # Generate images (this will take 5-10 minutes)
-        flash('Starting AI generation... This will take 5-10 minutes.', 'info')
+        flash('Starting AI generation... Transforming you into 12 hunks! This will take 5-10 minutes.', 'info')
 
         # For production, use Celery: generate_calendar_task.delay(...)
         # For mock, do it synchronously
@@ -150,7 +146,7 @@ def generate():
 
     except Exception as e:
         flash(f'Error starting generation: {str(e)}', 'danger')
-        return redirect(url_for('projects.prompts'))
+        return redirect(url_for('projects.themes'))
 
 @bp.route('/preview')
 def preview():

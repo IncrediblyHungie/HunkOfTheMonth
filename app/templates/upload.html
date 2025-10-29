@@ -14,7 +14,7 @@
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
-                    <div class="step-label">Write Prompts</div>
+                    <div class="step-label">Review Themes</div>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
@@ -34,17 +34,18 @@
                     </h2>
 
                     <p class="lead mb-4">
-                        Upload 3-10 photos of yourself. The AI will use these as reference to create your personalized calendar images.
+                        Upload 3-10 photos of yourself. The AI will use YOUR FACE and put it on 12 ridiculously hot, hunky bodies!
                     </p>
 
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Tips for best results:</strong>
+                        <strong>Tips for best hunk transformation:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Use clear, well-lit photos</li>
-                            <li>Include variety: different angles and expressions</li>
-                            <li>Close-up face shots work best</li>
-                            <li>Minimum 3 photos, up to 10 recommended</li>
+                            <li>Use clear, well-lit face photos (the AI needs to see your features!)</li>
+                            <li>Include variety: smiling, serious, different angles</li>
+                            <li>Close-up face shots work BEST for face-swapping</li>
+                            <li>Minimum 3 photos required, 5-7 recommended for best results</li>
+                            <li>Don't worry about your body - you'll have abs in every month! 💪</li>
                         </ul>
                     </div>
 
@@ -92,14 +93,14 @@
                     </div>
 
                     {% if images|length >= 3 %}
-                    <a href="{{ url_for('projects.prompts') }}" class="btn btn-success btn-lg">
+                    <a href="{{ url_for('projects.themes') }}" class="btn btn-success btn-lg">
                         <i class="fas fa-arrow-right me-2"></i>
-                        Continue to Prompts
+                        Continue to Review Monthly Hunks
                     </a>
                     {% else %}
                     <p class="text-muted">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        Upload at least 3 photos to continue
+                        Upload at least 3 photos to see your hunk transformations
                     </p>
                     {% endif %}
                     {% endif %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Monthly Hunk Themes{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Progress Steps -->
+            <div class="progress-steps mb-5">
+                <div class="step completed">
+                    <div class="step-number"><i class="fas fa-check"></i></div>
+                    <div class="step-label">Upload Photos</div>
+                </div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Review Themes</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Generate</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Preview</div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="card-title mb-4 text-center">
+                        <i class="fas fa-calendar-alt text-primary me-2"></i>
+                        Your Monthly Hunk Transformations
+                    </h2>
+
+                    <p class="lead text-center mb-4">
+                        We'll place YOUR face on 12 ridiculously sexy hunks, one for each month!
+                        Check out what absurd scenarios await you...
+                    </p>
+
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-fire me-2"></i>
+                        <strong>Get ready to be a HUNK!</strong>
+                        Each month features you in a hilarious, sexy scenario.
+                        These themes are pre-selected to maximize the laughs and the abs!
+                    </div>
+
+                    <!-- Monthly Themes Grid -->
+                    <div class="row g-4 mt-4">
+                        {% for month_num in range(1, 13) %}
+                        {% set theme = themes[month_num] %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="theme-card h-100">
+                                <div class="theme-header">
+                                    <div class="theme-month">{{ theme.month }}</div>
+                                    <h5 class="theme-title mb-0">{{ theme.title }}</h5>
+                                </div>
+                                <div class="theme-body">
+                                    <p class="theme-description">
+                                        <i class="fas fa-quote-left me-2"></i>
+                                        {{ theme.description }}
+                                    </p>
+                                    <div class="theme-badge">
+                                        <i class="fas fa-laugh-beam me-2"></i>
+                                        Ridiculous Level: MAX
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <form method="POST" class="mt-5">
+                        <div class="text-center">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>WARNING:</strong> Proceeding will transform you into 12 hunks.
+                                Side effects may include excessive laughter and increased confidence.
+                            </div>
+
+                            <button type="submit" class="btn btn-success btn-lg px-5 mb-3">
+                                <i class="fas fa-magic me-2"></i>
+                                Make Me A Hunk! (Generate Calendar)
+                            </button>
+
+                            <br>
+                            <a href="{{ url_for('projects.upload') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Photos
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.theme-card {
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    background: white;
+}
+
+.theme-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+.theme-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.theme-month {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.theme-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.theme-body {
+    padding: 20px;
+}
+
+.theme-description {
+    font-size: 14px;
+    color: #495057;
+    line-height: 1.6;
+    min-height: 80px;
+}
+
+.theme-badge {
+    display: inline-block;
+    background: #fff3cd;
+    color: #856404;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
