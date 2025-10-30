@@ -32,7 +32,10 @@ def create_app():
     # Minimal config - no database needed
     app.config['SQLALCHEMY_DATABASE_URI'] = None
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+    # Upload limits optimized for mobile/iPhone users
+    # Per image: 8MB (after client-side compression, original can be larger)
+    # Total request: 40MB (allows 5 high-quality photos)
+    app.config['MAX_CONTENT_LENGTH'] = 40 * 1024 * 1024  # 40MB max total request
 
     # Session configuration (stores everything in browser session temporarily)
     app.config['PERMANENT_SESSION_LIFETIME'] = int(os.getenv('PERMANENT_SESSION_LIFETIME', 86400))

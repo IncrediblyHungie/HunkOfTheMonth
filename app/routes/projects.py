@@ -6,8 +6,15 @@ from werkzeug.utils import secure_filename
 from app import session_storage
 from app.routes.main import get_current_project
 from app.services.monthly_themes import get_all_themes, get_theme, get_enhanced_prompt
-from PIL import Image
+from PIL import Image, ImageOps
 import io
+
+# Register HEIC support for iPhone photos
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass  # HEIC support not available
 
 bp = Blueprint('projects', __name__, url_prefix='/project')
 
@@ -23,24 +30,54 @@ def upload():
         if 'photos' in request.files:
             files = request.files.getlist('photos')
 
+            processed_count = 0
             for file in files:
                 if file and file.filename:
-                    # Read image data
-                    img_data = file.read()
+                    try:
+                        # Read image data
+                        original_data = file.read()
 
-                    # Create thumbnail
-                    img = Image.open(io.BytesIO(img_data))
-                    img.thumbnail((200, 200))
-                    thumb_io = io.BytesIO()
-                    img.save(thumb_io, format='JPEG')
-                    thumb_data = thumb_io.getvalue()
+                        # Open image (supports JPEG, PNG, HEIC, etc.)
+                        img = Image.open(io.BytesIO(original_data))
 
-                    # Save to session storage
-                    session_storage.add_uploaded_image(
-                        secure_filename(file.filename),
-                        img_data,
-                        thumb_data
-                    )
+                        # Auto-rotate based on EXIF orientation (iPhone photos)
+                        img = ImageOps.exif_transpose(img)
+
+                        # Convert to RGB if necessary (handles RGBA, grayscale, etc.)
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+
+                        # Optimize: Resize if too large (face detection doesn't need 4000px)
+                        # Target max dimension: 1920px (plenty for AI face analysis)
+                        max_dimension = 1920
+                        if max(img.size) > max_dimension:
+                            # Resize maintaining aspect ratio
+                            ratio = max_dimension / max(img.size)
+                            new_size = tuple(int(dim * ratio) for dim in img.size)
+                            img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+                        # Save optimized version (strips EXIF for privacy + size reduction)
+                        optimized_io = io.BytesIO()
+                        img.save(optimized_io, format='JPEG', quality=90, optimize=True)
+                        img_data = optimized_io.getvalue()
+
+                        # Create thumbnail for preview
+                        img.thumbnail((200, 200))
+                        thumb_io = io.BytesIO()
+                        img.save(thumb_io, format='JPEG', quality=85)
+                        thumb_data = thumb_io.getvalue()
+
+                        # Save to session storage
+                        session_storage.add_uploaded_image(
+                            secure_filename(file.filename),
+                            img_data,
+                            thumb_data
+                        )
+                        processed_count += 1
+
+                    except Exception as e:
+                        flash(f'Error processing {file.filename}: {str(e)}', 'warning')
+                        continue
 
             flash(f'{len(files)} photos uploaded successfully!', 'success')
 
