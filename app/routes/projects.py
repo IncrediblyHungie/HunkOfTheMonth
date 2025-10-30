@@ -47,12 +47,47 @@ def upload():
         # Check if enough photos
         images = session_storage.get_uploaded_images()
         if len(images) >= 3:  # Minimum 3 photos
-            return redirect(url_for('projects.themes'))
+            return redirect(url_for('projects.customize'))
 
     # Get uploaded images
     images = session_storage.get_uploaded_images()
 
     return render_template('upload.html', project=project, images=images)
+
+@bp.route('/customize', methods=['GET', 'POST'])
+def customize():
+    """Customize calendar preferences (gender, body type, style, tone)"""
+    project = get_current_project()
+    if not project:
+        return redirect(url_for('main.start'))
+
+    # Check if user uploaded photos
+    images = session_storage.get_uploaded_images()
+    if len(images) < 3:
+        flash('Please upload at least 3 photos first!', 'warning')
+        return redirect(url_for('projects.upload'))
+
+    if request.method == 'POST':
+        # Get customization preferences from form
+        preferences = {
+            'gender': request.form.get('gender', 'male'),
+            'body_type': request.form.get('body_type', 'athletic'),
+            'style': request.form.get('style', 'sexy'),
+            'tone': request.form.get('tone', 'funny')
+        }
+
+        # Save preferences to session
+        session_storage.set_preferences(preferences)
+
+        flash('Preferences saved! Check out your custom themes.', 'success')
+        return redirect(url_for('projects.themes'))
+
+    # Get customization options
+    from app.services.customization_options import get_customization_options, get_default_preferences
+    options = get_customization_options()
+    current_preferences = session_storage.get_preferences() or get_default_preferences()
+
+    return render_template('customize.html', project=project, options=options, preferences=current_preferences)
 
 @bp.route('/themes', methods=['GET', 'POST'])
 def themes():

@@ -27,7 +27,8 @@ def _get_storage():
                 'created_at': datetime.utcnow().isoformat()
             },
             'images': [],
-            'months': []
+            'months': [],
+            'preferences': None
         }
     return _storage[session_id]
 
@@ -139,6 +140,17 @@ def get_completion_count():
     """Get number of completed months"""
     storage = _get_storage()
     return sum(1 for m in storage['months'] if m['generation_status'] == 'completed')
+
+def get_preferences():
+    """Get user customization preferences"""
+    storage = _get_storage()
+    return storage.get('preferences')
+
+def set_preferences(preferences):
+    """Set user customization preferences"""
+    storage = _get_storage()
+    storage['preferences'] = preferences
+    return preferences
 
 def clear_session():
     """Clear all session data (for testing)"""

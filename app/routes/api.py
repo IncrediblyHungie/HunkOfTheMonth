@@ -102,8 +102,11 @@ def generate_month(month_num):
         # Mark as processing
         session_storage.update_month_status(month_num, 'processing')
 
-        # Get enhanced prompt for this month
-        enhanced_prompt = get_enhanced_prompt(month_num)
+        # Get user preferences
+        preferences = session_storage.get_preferences()
+
+        # Get enhanced prompt for this month with user customizations
+        enhanced_prompt = get_enhanced_prompt(month_num, preferences=preferences)
 
         # Get reference images for face-swapping (already raw binary data!)
         uploaded_images = session_storage.get_uploaded_images()

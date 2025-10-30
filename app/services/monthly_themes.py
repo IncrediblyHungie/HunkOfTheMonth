@@ -86,13 +86,101 @@ def get_all_themes():
     """Get all monthly themes"""
     return MONTHLY_THEMES
 
-def get_enhanced_prompt(month_number, user_description=""):
+def customize_prompt_for_gender(base_prompt, gender):
+    """Customize prompt based on gender preference"""
+    if gender == "female":
+        # Convert male descriptions to female
+        replacements = {
+            "male": "female",
+            "muscular": "toned and fit",
+            "shirtless": "wearing a fitted sports bra or crop top",
+            "his": "her",
+            "he": "she",
+            "firefighter suspenders": "firefighter uniform top tied around waist",
+            "leather vest with no shirt": "leather vest over fitted tank top",
+            "huge arms": "sculpted arms",
+            "defined abs": "toned abs",
+            "six-pack abs": "flat, defined abs"
+        }
+        for old, new in replacements.items():
+            base_prompt = base_prompt.replace(old, new)
+    elif gender == "nonbinary":
+        # Make descriptions more neutral
+        replacements = {
+            "male": "person",
+            "his": "their",
+            "he": "they",
+            "muscular": "athletic",
+            "shirtless": "wearing athletic wear"
+        }
+        for old, new in replacements.items():
+            base_prompt = base_prompt.replace(old, new)
+
+    return base_prompt
+
+def customize_prompt_for_body_type(base_prompt, body_type):
+    """Customize prompt based on body type preference"""
+    body_descriptions = {
+        "extremely_muscular": "extremely muscular with huge biceps and massive chest",
+        "athletic": "athletic and toned with defined muscles",
+        "fit": "fit and healthy with visible muscle tone",
+        "average": "with a normal, healthy build"
+    }
+
+    # Replace any existing muscle descriptions
+    if body_type in body_descriptions:
+        # Add body type after gender mention
+        if "muscular" in base_prompt:
+            base_prompt = base_prompt.replace("incredibly muscular", body_descriptions[body_type])
+            base_prompt = base_prompt.replace("extremely muscular", body_descriptions[body_type])
+            base_prompt = base_prompt.replace("very muscular", body_descriptions[body_type])
+            base_prompt = base_prompt.replace("muscular", body_descriptions[body_type])
+
+    return base_prompt
+
+def customize_prompt_for_style(base_prompt, style):
+    """Customize prompt based on clothing style preference"""
+    if style == "modest":
+        # Make clothing more modest
+        replacements = {
+            "shirtless": "wearing a fitted shirt",
+            "wearing nothing but": "wearing",
+            "no shirt underneath": "a shirt underneath",
+            "with no shirt": "fully clothed",
+            "tight swim trunks": "athletic swimwear",
+            "revealing": "appropriate"
+        }
+        for old, new in replacements.items():
+            base_prompt = base_prompt.replace(old, new)
+    elif style == "comedic":
+        base_prompt += ", exaggerated expressions, comedic timing, silly costume elements"
+    elif style == "dramatic":
+        base_prompt += ", cinematic lighting, dramatic shadows, action movie poster style"
+
+    return base_prompt
+
+def customize_prompt_for_tone(base_prompt, tone):
+    """Customize prompt based on tone preference"""
+    tone_additions = {
+        "serious": ", serious expression, intense gaze, professional model pose",
+        "funny": ", comedic expression, humorous situation, gag gift vibes",
+        "over_the_top": ", exaggerated muscles, ridiculously sexy, absurdly dramatic",
+        "playful": ", playful expression, flirty pose, fun and lighthearted"
+    }
+
+    if tone in tone_additions:
+        base_prompt += tone_additions[tone]
+
+    return base_prompt
+
+def get_enhanced_prompt(month_number, user_description="", preferences=None):
     """
-    Get enhanced AI prompt for face-swapping
+    Get enhanced AI prompt for face-swapping with customization
 
     Args:
         month_number: Month number (1-12)
         user_description: Optional description of user's features
+        preferences: Dict with gender, body_type, style, tone preferences
 
     Returns:
         Enhanced prompt for Gemini AI
@@ -103,11 +191,21 @@ def get_enhanced_prompt(month_number, user_description=""):
 
     base_prompt = theme['prompt']
 
+    # Apply customizations if preferences provided
+    if preferences:
+        base_prompt = customize_prompt_for_gender(base_prompt, preferences.get('gender', 'male'))
+        base_prompt = customize_prompt_for_body_type(base_prompt, preferences.get('body_type', 'athletic'))
+        base_prompt = customize_prompt_for_style(base_prompt, preferences.get('style', 'sexy'))
+        base_prompt = customize_prompt_for_tone(base_prompt, preferences.get('tone', 'funny'))
+
     # Add face-swap instructions
+    gender_pronoun = "his" if preferences and preferences.get('gender') == 'male' else "their"
+    body_desc = "hunky body" if preferences and preferences.get('gender') == 'male' else "fit body"
+
     face_swap_instructions = f"""
 IMPORTANT: Use the reference images to capture the person's facial features accurately.
-Maintain their face, skin tone, eye color, and distinctive features while placing them on this hunky body.
-The face should look natural and photorealistic, seamlessly blended with the muscular body.
+Maintain their face, skin tone, eye color, and distinctive features while placing them on this {body_desc}.
+The face should look natural and photorealistic, seamlessly blended with the body.
 
 Scene Description: {base_prompt}
 
