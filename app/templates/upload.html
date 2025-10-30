@@ -50,25 +50,45 @@
                         </ul>
                     </div>
 
+                    <div class="alert alert-success border-success">
+                        <strong>📱 How to add multiple photos on iPhone:</strong>
+                        <div class="mt-2">
+                            <strong>Option 1: Take photos with camera</strong> (one at a time)
+                            <ol class="mb-2 mt-1">
+                                <li>Tap "Choose File" → Select "Take Photo"</li>
+                                <li>Take your selfie → Tap "Upload Photos"</li>
+                                <li>Review your photo in the gallery below</li>
+                                <li>Click "Add More" button → Repeat for each new photo!</li>
+                            </ol>
+                            <strong>Option 2: Select from Photo Library</strong> (multiple at once)
+                            <ol class="mb-0 mt-1">
+                                <li>Tap "Choose File" → Select "Photo Library"</li>
+                                <li>Select multiple photos (tap each one)</li>
+                                <li>Tap "Upload Photos" → All photos upload together!</li>
+                            </ol>
+                        </div>
+                    </div>
+
                     <!-- Upload Form -->
                     <form method="POST" enctype="multipart/form-data" id="uploadForm">
                         <div class="mb-4">
                             <label for="photos" class="form-label">
-                                📸 Take Selfies or Choose Photos
+                                📸 Upload Your Selfies
                             </label>
                             <input
                                 type="file"
-                                class="form-control"
+                                class="form-control form-control-lg"
                                 id="photos"
                                 name="photos"
                                 multiple
                                 accept="image/*,.heic,.heif"
-                                capture="user"
                                 required
                             >
                             <div class="form-text">
-                                <strong>On mobile:</strong> Tap to open camera or choose from gallery • Select multiple photos at once
-                                <br><small class="text-muted">Formats: JPG, PNG, HEIC (iPhone) • Max 8MB per image, 40MB total • Auto-optimized for quality & privacy</small>
+                                <strong>iPhone/Mobile:</strong> Tap to choose "Take Photo" (one at a time) OR "Photo Library" (select multiple)
+                                <br><small class="text-muted">📷 Take photos one at a time, review, then click "Add More" to take another</small>
+                                <br><small class="text-muted">📁 From gallery: Select multiple photos at once</small>
+                                <br><small class="text-muted">Formats: JPG, PNG, HEIC • Max 8MB/photo, 40MB total • Auto-optimized</small>
                             </div>
                             <!-- Upload Progress -->
                             <div id="uploadProgress" class="mt-3" style="display: none;">
@@ -79,9 +99,9 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-lg">
+                        <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
                             <i class="fas fa-cloud-upload-alt me-2"></i>
-                            Upload Photos
+                            <span id="uploadBtnText">Upload Photos</span>
                         </button>
                     </form>
 
@@ -164,8 +184,18 @@ const COMPRESSION_QUALITY = 0.85; // 85% quality (sweet spot for mobile)
 // File size validation before upload
 document.getElementById('photos').addEventListener('change', function(e) {
     const files = Array.from(e.target.files);
+    const uploadBtnText = document.getElementById('uploadBtnText');
+    const uploadBtn = document.getElementById('uploadBtn');
 
-    if (files.length === 0) return;
+    if (files.length === 0) {
+        uploadBtnText.textContent = 'Upload Photos';
+        return;
+    }
+
+    // Update button text to show file count
+    uploadBtnText.textContent = `Upload ${files.length} Photo${files.length > 1 ? 's' : ''}`;
+    uploadBtn.classList.add('btn-success');
+    uploadBtn.classList.remove('btn-primary');
 
     // Validate individual file sizes
     const oversizedFiles = files.filter(f => f.size > MAX_FILE_SIZE);
@@ -179,12 +209,15 @@ document.getElementById('photos').addEventListener('change', function(e) {
         const totalMB = (totalSize / (1024 * 1024)).toFixed(1);
         alert(`⚠️ Total upload size (${totalMB}MB) exceeds 40MB limit. Please select fewer photos or smaller files.`);
         e.target.value = ''; // Clear selection
+        uploadBtnText.textContent = 'Upload Photos';
+        uploadBtn.classList.remove('btn-success');
+        uploadBtn.classList.add('btn-primary');
         return;
     }
 
     // Show file count and size
     const sizeMB = (totalSize / (1024 * 1024)).toFixed(1);
-    console.log(`Selected ${files.length} photos (${sizeMB}MB total)`);
+    console.log(`✅ Selected ${files.length} photos (${sizeMB}MB total)`);
 });
 
 // Client-side image compression and upload with progress

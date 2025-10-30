@@ -12,30 +12,50 @@ This document describes the mobile-optimized image upload system for the Hunk of
 
 ## Direct Camera Access 📸
 
-### HTML5 Capture Attribute
-The file input uses the `capture="user"` attribute to provide direct access to the device's front-facing camera (perfect for selfies):
+### iOS Photo Upload (Fixed)
+
+**The Problem with `capture` Attribute:**
+The HTML5 `capture` attribute was originally added to force mobile devices to open the camera. However, **on iOS Safari 10.3.1+, the `capture` attribute blocks access to the Photo Library**, forcing camera-only mode. This creates a terrible UX where users cannot select existing photos.
+
+**The Solution:**
+✅ **Remove the `capture` attribute entirely!**
 
 ```html
+<!-- ❌ OLD (Broken on iOS - Camera only) -->
 <input type="file"
        accept="image/*,.heic,.heif"
        capture="user"
        multiple>
+
+<!-- ✅ NEW (Works perfectly on iOS) -->
+<input type="file"
+       accept="image/*,.heic,.heif"
+       multiple>
 ```
 
-**User Experience on Mobile:**
-- **iOS**: Tapping the input shows "Take Photo" + "Photo Library" options
-- **Android**: Opens camera app directly (front-facing camera)
-- **Desktop**: Opens standard file picker (fallback)
+**User Experience on iOS (Fixed):**
+When the user taps the file input, iOS shows **3 options**:
+1. **Take Photo** - Opens camera (front or rear), takes ONE photo
+2. **Photo Library** - Browse photos, select MULTIPLE at once
+3. **Browse** - Access Files app, iCloud Drive, etc.
 
-**How It Works:**
-1. `capture="user"` → Front-facing camera (for selfies)
-2. `capture="environment"` → Rear-facing camera (not used in this app)
-3. `multiple` attribute → Allows selecting multiple photos from gallery
+**User Experience on Android:**
+- Shows "Camera" and "Gallery" options
+- Multiple selection works in both modes
 
-**Important Limitations:**
-- Cannot take multiple photos in one camera session (mobile OS limitation)
-- Users can take one photo at a time OR select multiple from gallery
-- iOS doesn't fully support `multiple` + `capture` together (shows both options instead)
+**Workflow for Multiple Camera Photos:**
+Since mobile browsers cannot take multiple photos in one camera session (OS limitation, not our code), the best UX pattern is:
+
+1. **Take Photo** → Opens camera → Take 1 selfie → Upload
+2. Gallery shows uploaded photo
+3. Click "**Add More**" button → Repeat steps 1-2
+4. Delete unwanted photos from gallery as needed
+
+**Workflow for Photo Library (Multiple at Once):**
+1. **Photo Library** → Browse existing photos
+2. Tap multiple photos to select (iOS: tap each one)
+3. Upload → All photos upload together
+4. Gallery shows all uploaded photos
 
 ### Enhanced Gallery UI
 
@@ -409,9 +429,19 @@ with open('test.heic', 'rb') as f:
 
 ## Recent Updates
 
-### 2025-10-29 (Latest)
+### 2025-10-29 (iOS Fix - Latest)
+**Fixed iPhone Photo Library Access**:
+- 🐛 **BUG FIX**: Removed `capture="user"` attribute that was blocking Photo Library access on iOS
+- ✅ iOS now shows 3 options: "Take Photo", "Photo Library", "Browse"
+- ✅ Users can now select multiple photos from Photo Library
+- ✅ Camera workflow: Take 1 photo → Upload → Click "Add More" → Repeat
+- Added clear step-by-step instructions for iPhone users
+- Updated button text to show "Upload X Photos" when files selected
+- Button turns green when files are ready to upload
+
+### 2025-10-29 (Gallery Enhancement)
 **Camera Access & Enhanced Gallery**:
-- Added `capture="user"` attribute for direct front-facing camera access
+- ~~Added `capture="user"` attribute~~ (removed - broke iOS Photo Library access)
 - Enhanced gallery UI with better photo management
 - Added "Add More Photos" button (2 locations for convenience)
 - Improved delete functionality with visual feedback and animations
