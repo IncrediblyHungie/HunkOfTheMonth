@@ -1,0 +1,32 @@
+app = "kevcal-api"
+primary_region = "sea"
+
+[build]
+  # Uses Nixpacks to auto-detect Flask
+
+[env]
+  PORT = "8080"
+  FLASK_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"        # Scale to zero when idle
+  auto_start_machines = true
+  min_machines_running = 0           # Zero cost when no requests
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# Static file serving (optional, most will be on Vercel)
+[[statics]]
+  guest_path = "/app/app/static"
+  url_prefix = "/static"
