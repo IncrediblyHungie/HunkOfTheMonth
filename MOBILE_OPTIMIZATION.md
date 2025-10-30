@@ -10,6 +10,64 @@ This document describes the mobile-optimized image upload system for the Hunk of
 - **Total Request**: 40MB maximum (allows ~5 high-quality photos per upload)
 - **Recommended**: 3-7 photos for best AI face-swapping results
 
+## Direct Camera Access 📸
+
+### HTML5 Capture Attribute
+The file input uses the `capture="user"` attribute to provide direct access to the device's front-facing camera (perfect for selfies):
+
+```html
+<input type="file"
+       accept="image/*,.heic,.heif"
+       capture="user"
+       multiple>
+```
+
+**User Experience on Mobile:**
+- **iOS**: Tapping the input shows "Take Photo" + "Photo Library" options
+- **Android**: Opens camera app directly (front-facing camera)
+- **Desktop**: Opens standard file picker (fallback)
+
+**How It Works:**
+1. `capture="user"` → Front-facing camera (for selfies)
+2. `capture="environment"` → Rear-facing camera (not used in this app)
+3. `multiple` attribute → Allows selecting multiple photos from gallery
+
+**Important Limitations:**
+- Cannot take multiple photos in one camera session (mobile OS limitation)
+- Users can take one photo at a time OR select multiple from gallery
+- iOS doesn't fully support `multiple` + `capture` together (shows both options instead)
+
+### Enhanced Gallery UI
+
+**Photo Management Features:**
+- ✅ View all uploaded photos in responsive grid layout
+- ✅ Delete individual photos with confirmation dialog
+- ✅ "Add More Photos" button to upload additional photos without scrolling
+- ✅ Photo counter showing current upload count
+- ✅ Visual feedback during delete (fade-out animation)
+- ✅ Smart prompts: "Need 3 photos" vs "Looking good! Continue or add more"
+
+**Gallery Implementation** (`app/templates/upload.html:88-146`):
+```html
+<!-- Photo thumbnail with delete button -->
+<div class="upload-thumbnail-card position-relative">
+    <img src="/api/image/thumbnail/{{ image.id }}"
+         style="width: 100%; height: 200px; object-fit: cover;">
+    <button class="btn btn-danger btn-sm delete-image-btn position-absolute"
+            style="top: 8px; right: 8px;">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+    <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white">
+        <small>Photo {{ loop.index }}</small>
+    </div>
+</div>
+```
+
+**JavaScript Handlers** (`app/templates/upload.html:361-417`):
+- **Add More Photos**: Triggers file input click without form submission
+- **Delete Photo**: AJAX deletion with loading spinner and fade-out animation
+- **Error Handling**: Graceful fallback if delete fails
+
 ## iPhone/Mobile Optimizations
 
 ### 1. HEIC Format Support ✅
@@ -349,5 +407,26 @@ with open('test.heic', 'rb') as f:
 
 ---
 
+## Recent Updates
+
+### 2025-10-29 (Latest)
+**Camera Access & Enhanced Gallery**:
+- Added `capture="user"` attribute for direct front-facing camera access
+- Enhanced gallery UI with better photo management
+- Added "Add More Photos" button (2 locations for convenience)
+- Improved delete functionality with visual feedback and animations
+- Added photo counter and smart progress prompts
+- Fixed image sizing (consistent 200px height, object-fit: cover)
+
+### 2025-10-29 (Initial)
+**Mobile Upload Optimization**:
+- Implemented two-layer image compression (client + server)
+- Added HEIC format support for iPhone photos
+- Upload limits: 8MB per image, 40MB total
+- Auto-rotation and EXIF stripping for privacy
+- Real-time upload progress tracking
+
+---
+
 *Last Updated: 2025-10-29*
-*Optimized for iPhone/mobile users with 8MB per image, 40MB total limits*
+*Optimized for iPhone/mobile users with direct camera access and smart photo management*
