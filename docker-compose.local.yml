@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: kevcal
+      POSTGRES_USER: kevcal
+      POSTGRES_PASSWORD: localdevpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Redis (for future Celery tasks)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Flask Backend
+  web:
+    build: .
+    command: python run.py
+    environment:
+      DATABASE_URL: postgresql://kevcal:localdevpassword@db:5432/kevcal
+      REDIS_URL: redis://redis:6379/0
+      FLASK_SECRET_KEY: dev-secret-key-local
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      FLASK_ENV: development
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

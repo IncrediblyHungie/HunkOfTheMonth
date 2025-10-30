@@ -54,9 +54,9 @@ MONTHLY_THEMES = {
     },
     9: {
         "month": "September",
-        "title": "Hunky Teacher Taming Chaos",
-        "description": "Chiseled teacher wrestling flying textbooks and school supplies",
-        "prompt": "Hyper-realistic photo of a fit, attractive male teacher with rolled-up sleeves showing muscular arms, surrounded by flying books and school supplies, apple on desk, chalkboard background, back-to-school chaos, action pose catching supplies"
+        "title": "Badass Biker on the Highway",
+        "description": "Incredibly tough and ripped biker riding a Harley Davidson through the open road",
+        "prompt": "Hyper-realistic photo of an extremely muscular, tattooed male biker with huge arms and defined abs, wearing a leather vest with no shirt underneath, black leather pants, bandana, sunglasses, riding a chrome Harley Davidson motorcycle, open highway background, sunset lighting, wind in hair, tough intimidating expression, road trip vibes"
     },
     10: {
         "month": "October",

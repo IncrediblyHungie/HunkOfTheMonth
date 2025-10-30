@@ -1,5 +1,5 @@
-app = "kevcal-api"
-primary_region = "sea"
+app = "hunkofthemonth"
+primary_region = "sjc"
 
 [build]
   # Uses Nixpacks to auto-detect Flask
