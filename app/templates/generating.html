@@ -69,18 +69,22 @@
 
 {% block extra_scripts %}
 <script>
-// MAXIMUM PARALLEL AI generation - ALL 12 months at once with retry logic!
+// PARALLEL AI generation with memory management (6 at a time to prevent OOM)
 const months = {{ months | tojson }};
 let completedCount = months.filter(m => m.generation_status === 'completed').length;
 let failedCount = 0;
 let activeRequests = 0;
-const MAX_PARALLEL = 12; // Generate ALL 12 months simultaneously (4x faster!)
+const MAX_PARALLEL = 6; // Generate 6 months at a time (prevents OOM kills on 1GB RAM)
 const MAX_RETRIES = 3; // Retry failed months up to 3 times
 const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
 
 // Track retry attempts per month
 const retryCount = {};
 const failedMonths = new Set();
+
+// Queue management for parallelism control
+let monthQueue = [];
+let queueProcessing = false;
 
 const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
@@ -154,7 +158,9 @@ async function generateMonth(monthNum, attemptNum = 1) {
             updateBadge(monthNum, 'retrying');
 
             setTimeout(() => {
-                generateMonth(monthNum, attemptNum + 1);
+                // Add to front of queue for priority retry
+                monthQueue.unshift({monthNum, attemptNum: attemptNum + 1});
+                processQueue();
             }, delay);
         } else {
             // Max retries exceeded
@@ -165,13 +171,29 @@ async function generateMonth(monthNum, attemptNum = 1) {
         }
     } finally {
         activeRequests--;
+        processQueue(); // Start next month from queue
         checkCompletion();
+    }
+}
+
+function processQueue() {
+    // Start next months from queue if we have capacity
+    while (activeRequests < MAX_PARALLEL && monthQueue.length > 0) {
+        const next = monthQueue.shift();
+        // Handle both month numbers and retry objects
+        if (typeof next === 'object') {
+            console.log(`📤 Dequeuing retry for month ${next.monthNum} attempt ${next.attemptNum} (${monthQueue.length} remaining)`);
+            generateMonth(next.monthNum, next.attemptNum);
+        } else {
+            console.log(`📤 Dequeuing month ${next} (${monthQueue.length} remaining in queue)`);
+            generateMonth(next);
+        }
     }
 }
 
 function checkCompletion() {
     // Check if ALL requests are done (including retries)
-    if (activeRequests === 0) {
+    if (activeRequests === 0 && monthQueue.length === 0) {
         const totalDone = completedCount + failedMonths.size;
 
         if (totalDone >= 12) {
@@ -202,13 +224,15 @@ function startGeneration() {
     }
 
     console.log(`📋 Generating ${pendingMonths.length} months`);
-    console.log(`⚡ MAXIMUM SPEED: All ${pendingMonths.length} months in parallel!`);
+    console.log(`⚡ Parallel generation: ${Math.min(pendingMonths.length, MAX_PARALLEL)} months at a time (${pendingMonths.length} total)`);
     console.log(`🔄 Auto-retry enabled: Up to ${MAX_RETRIES} attempts per month`);
 
-    // Start ALL months simultaneously
-    pendingMonths.forEach(monthNum => {
-        generateMonth(monthNum);
-    });
+    // Add all pending months to queue
+    monthQueue = [...pendingMonths];
+    console.log(`📥 Queued ${monthQueue.length} months for generation`);
+
+    // Start initial batch (MAX_PARALLEL at a time)
+    processQueue();
 }
 
 // Initialize progress
