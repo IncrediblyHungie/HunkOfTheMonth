@@ -292,7 +292,7 @@ def get_enhanced_prompt(month_number, user_description="", preferences=None, tie
         month_number: Month number (1-12)
         user_description: Optional description of user's features
         preferences: Dict with gender, body_type, style, tone preferences
-        tier: Prompt safety tier (1=euphemisms, 2=softened, 3=ultra-safe)
+        tier: Prompt safety tier (0=original/no-sanitization, 1=euphemisms, 2=softened)
 
     Returns:
         Enhanced prompt for Gemini AI
@@ -303,14 +303,27 @@ def get_enhanced_prompt(month_number, user_description="", preferences=None, tie
 
     base_prompt = theme['prompt']
 
-    # Apply customizations if preferences provided
-    if preferences:
-        base_prompt = customize_prompt_for_gender(base_prompt, preferences.get('gender', 'male'))
-        base_prompt = customize_prompt_for_body_type(base_prompt, preferences.get('body_type', 'athletic'))
-        base_prompt = customize_prompt_for_style(base_prompt, preferences.get('style', 'sexy'))
-        base_prompt = customize_prompt_for_tone(base_prompt, preferences.get('tone', 'funny'))
+    # TIER 0: No customization, no sanitization (for base/default prompts that already work)
+    if preferences is None or tier == 0:
+        # Use original prompts unchanged (working version)
+        face_swap_instructions = f"""
+IMPORTANT: Use the reference images to capture the person's facial features accurately.
+Maintain their face, skin tone, eye color, and distinctive features while placing them on this hunky body.
+The face should look natural and photorealistic, seamlessly blended with the muscular body.
 
-    # Apply tier-based sanitization
+Scene Description: {base_prompt}
+
+Style: Professional photography, high detail, 4K quality, perfect lighting, magazine cover quality.
+"""
+        return face_swap_instructions
+
+    # Apply customizations if preferences provided
+    base_prompt = customize_prompt_for_gender(base_prompt, preferences.get('gender', 'male'))
+    base_prompt = customize_prompt_for_body_type(base_prompt, preferences.get('body_type', 'athletic'))
+    base_prompt = customize_prompt_for_style(base_prompt, preferences.get('style', 'sexy'))
+    base_prompt = customize_prompt_for_tone(base_prompt, preferences.get('tone', 'funny'))
+
+    # Apply tier-based sanitization ONLY for customized prompts
     if tier == 1:
         # Tier 1: Creative euphemisms (bypass filters while keeping intent)
         base_prompt = sanitize_prompt_tier1(base_prompt)
@@ -321,7 +334,7 @@ def get_enhanced_prompt(month_number, user_description="", preferences=None, tie
     # Add face-swap instructions (adjusted for tier)
     if tier == 1:
         gender_pronoun = "their"
-        body_desc = "athletic physique" if tier == 1 else "confident presence"
+        body_desc = "athletic physique"
 
         face_swap_instructions = f"""
 IMPORTANT: Use the reference images to capture the person's facial features accurately.
