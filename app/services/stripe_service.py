@@ -135,13 +135,19 @@ def extract_shipping_address(checkout_session):
     Extract shipping address from Stripe checkout session
 
     Args:
-        checkout_session: Stripe Session object (must have shipping_details expanded)
+        checkout_session: Stripe Session object
 
     Returns:
         dict: Formatted shipping address
     """
-    shipping = checkout_session.shipping_details.address
-    customer_name = checkout_session.customer_details.name
+    # Stripe API 2025-09-30+ stores shipping in collected_information
+    if hasattr(checkout_session, 'collected_information') and checkout_session.collected_information:
+        shipping = checkout_session.collected_information['shipping_details']['address']
+        customer_name = checkout_session.collected_information['shipping_details']['name']
+    else:
+        # Fallback for older API versions
+        shipping = checkout_session.shipping_details.address
+        customer_name = checkout_session.customer_details.name
 
     # Split name into first and last
     name_parts = customer_name.split(maxsplit=1)
@@ -151,11 +157,11 @@ def extract_shipping_address(checkout_session):
     return {
         'first_name': first_name,
         'last_name': last_name,
-        'address1': shipping.line1,
-        'address2': shipping.line2 or '',
-        'city': shipping.city,
-        'state': shipping.state or '',
-        'zip': shipping.postal_code,
-        'country': shipping.country,
+        'address1': shipping['line1'] if isinstance(shipping, dict) else shipping.line1,
+        'address2': (shipping.get('line2') or '') if isinstance(shipping, dict) else (shipping.line2 or ''),
+        'city': shipping['city'] if isinstance(shipping, dict) else shipping.city,
+        'state': (shipping.get('state') or '') if isinstance(shipping, dict) else (shipping.state or ''),
+        'zip': shipping['postal_code'] if isinstance(shipping, dict) else shipping.postal_code,
+        'country': shipping['country'] if isinstance(shipping, dict) else shipping.country,
         'phone': checkout_session.customer_details.phone or ''
     }
