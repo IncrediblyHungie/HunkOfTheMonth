@@ -2,24 +2,8 @@
 Stripe payment processing integration
 Handles checkout sessions, webhooks, and payment verification
 """
-import stripe as stripe_module
-import os
+import stripe
 from flask import current_app
-
-# Initialize Stripe immediately on import
-_api_key = os.getenv('STRIPE_SECRET_KEY')
-if _api_key:
-    stripe_module.api_key = _api_key
-
-def _ensure_stripe_initialized():
-    """Ensure Stripe API key is set before making API calls"""
-    if not stripe_module.api_key:
-        api_key = os.getenv('STRIPE_SECRET_KEY')
-        if not api_key:
-            raise ValueError("STRIPE_SECRET_KEY not configured. Check your .env file.")
-        stripe_module.api_key = api_key
-        print(f"✓ Stripe API key initialized in service: {api_key[:20]}...")
-    return True
 
 # Product pricing in cents
 CALENDAR_PRICES = {
@@ -53,9 +37,6 @@ def create_checkout_session(product_type, success_url, cancel_url, metadata=None
     Returns:
         dict: {'session_id': str, 'url': str}
     """
-    # Ensure Stripe is initialized with API key
-    _ensure_stripe_initialized()
-
     if product_type not in CALENDAR_PRICES:
         raise ValueError(f"Invalid product type: {product_type}")
 
@@ -69,7 +50,7 @@ def create_checkout_session(product_type, success_url, cancel_url, metadata=None
         session_metadata.update(metadata)
 
     # Create checkout session
-    session = stripe_module.checkout.Session.create(
+    session = stripe.checkout.Session.create(
         payment_method_types=['card', 'link'],
         line_items=[{
             'price_data': {
@@ -113,7 +94,7 @@ def retrieve_checkout_session(session_id, expand=None):
     Returns:
         Stripe Session object
     """
-    return stripe_module.checkout.Session.retrieve(
+    return stripe.checkout.Session.retrieve(
         session_id,
         expand=expand or []
     )
@@ -138,14 +119,14 @@ def verify_webhook_signature(payload, signature):
         raise ValueError("STRIPE_WEBHOOK_SECRET not configured")
 
     try:
-        event = stripe_module.Webhook.construct_event(
+        event = stripe.Webhook.construct_event(
             payload, signature, webhook_secret
         )
         return event
     except ValueError as e:
         # Invalid payload
         raise ValueError(f"Invalid payload: {e}")
-    except stripe_module.error.SignatureVerificationError as e:
+    except stripe.error.SignatureVerificationError as e:
         # Invalid signature
         raise ValueError(f"Invalid signature: {e}")
 
