@@ -28,7 +28,7 @@ requests==2.31.0
 gunicorn==21.2.0
 
 # Payment Processing
-stripe==7.8.0
+stripe>=13.0.0  # Modern API with stripe.checkout.Session support
 
 # Date/Time
 python-dateutil==2.8.2

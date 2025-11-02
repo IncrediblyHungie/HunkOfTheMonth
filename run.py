@@ -1,6 +1,6 @@
 """
 Hunk of the Month - Application Entry Point
-Version: 2.0.3 - CORRECT FILE: Sequential generation in generating_local.html
+Version: 2.0.4 - FIX: Upgrade Stripe to v13+ for checkout.Session API
 """
 import os
 from app import create_app
