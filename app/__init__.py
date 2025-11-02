@@ -52,9 +52,9 @@ def create_app():
     app.config['STRIPE_PUBLISHABLE_KEY'] = os.getenv('STRIPE_PUBLISHABLE_KEY')
     app.config['STRIPE_WEBHOOK_SECRET'] = os.getenv('STRIPE_WEBHOOK_SECRET')
 
-    # Initialize Stripe
+    # Initialize Stripe - MUST import at app level before any services use it
+    import stripe
     if app.config.get('STRIPE_SECRET_KEY'):
-        import stripe
         stripe.api_key = app.config['STRIPE_SECRET_KEY']
         print("✓ Stripe initialized")
     else:

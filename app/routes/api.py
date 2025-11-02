@@ -103,9 +103,6 @@ def generate_month(month_num):
         # Mark as processing
         session_storage.update_month_status(month_num, 'processing')
 
-        # Get user preferences
-        preferences = session_storage.get_preferences()
-
         # Get reference images for face-swapping (already raw binary data!)
         uploaded_images = session_storage.get_uploaded_images()
         reference_image_data = [img['file_data'] for img in uploaded_images]
@@ -114,50 +111,11 @@ def generate_month(month_num):
             session_storage.update_month_status(month_num, 'failed', error='No reference images found')
             return jsonify({'error': 'No reference images'}), 400
 
-        # Smart tier selection based on whether customization is used
-        image_data = None
-        tier_used = 0
-        last_error = None
-
-        # TIER 0: No customization - use original working prompts (no sanitization)
-        if preferences is None:
-            try:
-                print(f"📸 Month {month_num}: Using original prompts (no customization)...")
-                enhanced_prompt_tier0 = get_enhanced_prompt(month_num, preferences=None, tier=0)
-                image_data = generate_calendar_image(enhanced_prompt_tier0, reference_image_data)
-                print(f"✅ Month {month_num}: Original prompts succeeded!")
-                tier_used = 0
-            except Exception as e:
-                last_error = str(e)
-                print(f"❌ Month {month_num}: Original prompts failed ({last_error[:100]})")
-                raise Exception(f"Original prompt failed: {str(e)}")
-
-        # TIER 1 & 2: Customization provided - use two-tier bypass strategy
-        else:
-            # TIER 1: Try with euphemistic language first (creative bypass)
-            try:
-                print(f"🎨 Month {month_num}: Attempting Tier 1 (customized + euphemistic)...")
-                enhanced_prompt_tier1 = get_enhanced_prompt(month_num, preferences=preferences, tier=1)
-                image_data = generate_calendar_image(enhanced_prompt_tier1, reference_image_data)
-                print(f"✅ Month {month_num}: Tier 1 succeeded!")
-                tier_used = 1
-            except Exception as e:
-                last_error = str(e)
-                print(f"⚠️  Month {month_num}: Tier 1 failed ({last_error[:100]}), trying Tier 2...")
-
-                # TIER 2: Fallback to heavily softened prompts
-                try:
-                    enhanced_prompt_tier2 = get_enhanced_prompt(month_num, preferences=preferences, tier=2)
-                    image_data = generate_calendar_image(enhanced_prompt_tier2, reference_image_data)
-                    print(f"✅ Month {month_num}: Tier 2 succeeded!")
-                    tier_used = 2
-                except Exception as e2:
-                    last_error = str(e2)
-                    print(f"❌ Month {month_num}: Tier 2 also failed ({last_error[:100]})")
-                    raise Exception(f"Both customization tiers failed. Tier 1: {str(e)[:50]}, Tier 2: {str(e2)[:50]}")
-
-        if not image_data:
-            raise Exception(f"No image data generated. Last error: {last_error}")
+        # Generate image with simple working prompts
+        print(f"📸 Month {month_num}: Generating with classic prompts...")
+        enhanced_prompt = get_enhanced_prompt(month_num)
+        image_data = generate_calendar_image(enhanced_prompt, reference_image_data)
+        print(f"✅ Month {month_num}: Generation succeeded!")
 
         # Convert PNG to JPEG for smaller file size
         # Quality 85 is sweet spot: great visual quality, 40-50% smaller files
@@ -169,21 +127,14 @@ def generate_month(month_num):
         # Save to session storage
         session_storage.update_month_status(month_num, 'completed', image_data=jpeg_data)
 
-        tier_messages = {
-            0: "with original prompts (no customization)",
-            1: "with customized euphemistic prompts",
-            2: "with softened prompts (safety fallback)"
-        }
-        tier_message = tier_messages.get(tier_used, "")
-        print(f"💾 Month {month_num}: Saved {len(jpeg_data)} bytes, generated {tier_message}")
+        print(f"💾 Month {month_num}: Saved {len(jpeg_data)} bytes")
 
         return jsonify({
             'success': True,
             'status': 'completed',
             'month': month_num,
-            'message': f'Month {month_num} generated successfully {tier_message}',
-            'image_size': len(jpeg_data),
-            'tier_used': tier_used
+            'message': f'Month {month_num} generated successfully',
+            'image_size': len(jpeg_data)
         })
 
     except Exception as e:

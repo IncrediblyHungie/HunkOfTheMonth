@@ -1,10 +1,6 @@
 """
 Pre-defined monthly hunk themes
 Each month features a ridiculous, sexy scenario
-
-Two-tier prompt strategy to bypass AI safety filters:
-- Tier 1: Creative euphemisms and artistic language (bypasses most filters)
-- Tier 2: Softened/safe prompts (fallback if Tier 1 rejected)
 """
 
 MONTHLY_THEMES = {
@@ -58,9 +54,9 @@ MONTHLY_THEMES = {
     },
     9: {
         "month": "September",
-        "title": "Badass Biker on the Highway",
-        "description": "Incredibly tough and ripped biker riding a Harley Davidson through the open road",
-        "prompt": "Hyper-realistic photo of an extremely muscular, tattooed male biker with huge arms and defined abs, wearing a leather vest with no shirt underneath, black leather pants, bandana, sunglasses, riding a chrome Harley Davidson motorcycle, open highway background, sunset lighting, wind in hair, tough intimidating expression, road trip vibes"
+        "title": "Hunky Teacher Taming Chaos",
+        "description": "Chiseled teacher wrestling flying textbooks and school supplies",
+        "prompt": "Hyper-realistic photo of a fit, attractive male teacher with rolled-up sleeves showing muscular arms, surrounded by flying books and school supplies, apple on desk, chalkboard background, back-to-school chaos, action pose catching supplies"
     },
     10: {
         "month": "October",
@@ -90,209 +86,13 @@ def get_all_themes():
     """Get all monthly themes"""
     return MONTHLY_THEMES
 
-def customize_prompt_for_gender(base_prompt, gender):
-    """Customize prompt based on gender preference"""
-    if gender == "female":
-        # Convert male descriptions to female
-        replacements = {
-            "male": "female",
-            "muscular": "toned and fit",
-            "shirtless": "wearing a fitted sports bra or crop top",
-            "his": "her",
-            "he": "she",
-            "firefighter suspenders": "firefighter uniform top tied around waist",
-            "leather vest with no shirt": "leather vest over fitted tank top",
-            "huge arms": "sculpted arms",
-            "defined abs": "toned abs",
-            "six-pack abs": "flat, defined abs"
-        }
-        for old, new in replacements.items():
-            base_prompt = base_prompt.replace(old, new)
-    elif gender == "nonbinary":
-        # Make descriptions more neutral
-        replacements = {
-            "male": "person",
-            "his": "their",
-            "he": "they",
-            "muscular": "athletic",
-            "shirtless": "wearing athletic wear"
-        }
-        for old, new in replacements.items():
-            base_prompt = base_prompt.replace(old, new)
-
-    return base_prompt
-
-def customize_prompt_for_body_type(base_prompt, body_type):
-    """Customize prompt based on body type preference"""
-    body_descriptions = {
-        "extremely_muscular": "extremely muscular with huge biceps and massive chest",
-        "athletic": "athletic and toned with defined muscles",
-        "fit": "fit and healthy with visible muscle tone",
-        "average": "with a normal, healthy build"
-    }
-
-    # Replace any existing muscle descriptions
-    if body_type in body_descriptions:
-        # Add body type after gender mention
-        if "muscular" in base_prompt:
-            base_prompt = base_prompt.replace("incredibly muscular", body_descriptions[body_type])
-            base_prompt = base_prompt.replace("extremely muscular", body_descriptions[body_type])
-            base_prompt = base_prompt.replace("very muscular", body_descriptions[body_type])
-            base_prompt = base_prompt.replace("muscular", body_descriptions[body_type])
-
-    return base_prompt
-
-def customize_prompt_for_style(base_prompt, style):
-    """Customize prompt based on clothing style preference"""
-    if style == "modest":
-        # Make clothing more modest
-        replacements = {
-            "shirtless": "wearing a fitted shirt",
-            "wearing nothing but": "wearing",
-            "no shirt underneath": "a shirt underneath",
-            "with no shirt": "fully clothed",
-            "tight swim trunks": "athletic swimwear",
-            "revealing": "appropriate"
-        }
-        for old, new in replacements.items():
-            base_prompt = base_prompt.replace(old, new)
-    elif style == "comedic":
-        base_prompt += ", exaggerated expressions, comedic timing, silly costume elements"
-    elif style == "dramatic":
-        base_prompt += ", cinematic lighting, dramatic shadows, action movie poster style"
-
-    return base_prompt
-
-def customize_prompt_for_tone(base_prompt, tone):
-    """Customize prompt based on tone preference"""
-    tone_additions = {
-        "serious": ", serious expression, intense gaze, professional model pose",
-        "funny": ", comedic expression, humorous situation, gag gift vibes",
-        "over_the_top": ", exaggerated muscles, ridiculously sexy, absurdly dramatic",
-        "playful": ", playful expression, flirty pose, fun and lighthearted"
-    }
-
-    if tone in tone_additions:
-        base_prompt += tone_additions[tone]
-
-    return base_prompt
-
-def sanitize_prompt_tier1(prompt):
+def get_enhanced_prompt(month_number, user_description=""):
     """
-    Tier 1: Use creative euphemisms and artistic language to bypass safety filters
-    while maintaining the visual intent of fitness/comedy photography
-    """
-    # Safety filter bypass strategy: Replace flagged terms with artistic equivalents
-    replacements = {
-        # Body exposure terms → Athletic/Fitness terms
-        "shirtless": "in athletic wear",
-        "shirtless male": "male athlete in workout attire",
-        "shirtless female": "female athlete in fitness apparel",
-        "no shirt underneath": "athletic attire underneath",
-        "no shirt": "wearing athletic gear",
-        "bare chest": "athletic physique",
-        "wearing nothing but": "dressed in",
-
-        # Suggestive terms → Confident/Professional terms
-        "sexy": "striking",
-        "ridiculously sexy": "remarkably photogenic",
-        "incredibly sexy": "notably charismatic",
-        "seductive": "confident",
-        "sultry": "intense",
-
-        # Body description terms → Fitness terms
-        "defined abs": "athletic core",
-        "six-pack abs": "strong core muscles",
-        "perfect abs": "toned midsection",
-        "huge biceps": "developed arm muscles",
-        "massive chest": "broad athletic build",
-        "chiseled": "well-defined",
-        "ripped": "athletic",
-        "buff": "fit",
-        "sculpted": "toned",
-
-        # Clothing terms → Form-fitting athletic terms
-        "tight swim trunks": "athletic swimwear",
-        "revealing": "form-fitting",
-        "fitted sports bra": "athletic top",
-        "crop top": "workout top",
-
-        # Keep professional fitness photography language
-        "muscular": "athletic physique",
-        "incredibly muscular": "peak physical conditioning",
-        "extremely muscular": "highly athletic build",
-        "very muscular": "strong athletic form",
-    }
-
-    sanitized = prompt
-    for old, new in replacements.items():
-        sanitized = sanitized.replace(old, new)
-
-    return sanitized
-
-def sanitize_prompt_tier2(prompt, theme_description):
-    """
-    Tier 2: Heavily softened fallback prompts - focus on scenario, personality, humor
-    Removes all potentially flagged body/clothing references
-    """
-    # Extract the scenario/setting from theme description
-    # Focus on: facial expression, personality, scenario, humor
-
-    # Ultra-safe replacements - removes ALL body focus
-    safe_replacements = {
-        # Remove body descriptions entirely
-        "shirtless": "in professional attire",
-        "shirtless male": "male in professional clothing",
-        "shirtless female": "female in professional outfit",
-        "athletic wear": "casual outfit",
-        "workout attire": "comfortable clothing",
-        "fitness apparel": "casual attire",
-        "athletic": "energetic",
-        "muscular": "confident",
-        "incredibly muscular": "very confident",
-        "extremely muscular": "highly confident",
-        "athletic physique": "confident demeanor",
-        "peak physical conditioning": "energetic personality",
-        "toned": "healthy",
-        "fit": "active",
-        "defined": "clear",
-
-        # Remove body part references
-        "abs": "personality",
-        "core": "character",
-        "biceps": "arms",
-        "chest": "presence",
-        "arms": "gestures",
-
-        # Focus on face and expression instead
-        "striking": "friendly",
-        "photogenic": "expressive",
-        "charismatic": "warm",
-
-        # Keep only scenario-focused language
-        "ridiculous": "humorous",
-        "over-the-top": "comedic",
-        "dramatic": "expressive",
-    }
-
-    sanitized = prompt
-    for old, new in safe_replacements.items():
-        sanitized = sanitized.replace(old, new)
-
-    # Add safe, scenario-focused emphasis
-    sanitized += ". Focus on facial expression, personality, and humorous scenario. Professional portrait photography style."
-
-    return sanitized
-
-def get_enhanced_prompt(month_number, user_description="", preferences=None, tier=1):
-    """
-    Get enhanced AI prompt for face-swapping with customization and safety filter bypass
+    Get enhanced AI prompt for face-swapping
 
     Args:
         month_number: Month number (1-12)
         user_description: Optional description of user's features
-        preferences: Dict with gender, body_type, style, tone preferences
-        tier: Prompt safety tier (0=original/no-sanitization, 1=euphemisms, 2=softened)
 
     Returns:
         Enhanced prompt for Gemini AI
@@ -303,10 +103,8 @@ def get_enhanced_prompt(month_number, user_description="", preferences=None, tie
 
     base_prompt = theme['prompt']
 
-    # TIER 0: No customization, no sanitization (for base/default prompts that already work)
-    if preferences is None or tier == 0:
-        # Use original prompts unchanged (working version)
-        face_swap_instructions = f"""
+    # Add face-swap instructions
+    face_swap_instructions = f"""
 IMPORTANT: Use the reference images to capture the person's facial features accurately.
 Maintain their face, skin tone, eye color, and distinctive features while placing them on this hunky body.
 The face should look natural and photorealistic, seamlessly blended with the muscular body.
@@ -314,47 +112,6 @@ The face should look natural and photorealistic, seamlessly blended with the mus
 Scene Description: {base_prompt}
 
 Style: Professional photography, high detail, 4K quality, perfect lighting, magazine cover quality.
-"""
-        return face_swap_instructions
-
-    # Apply customizations if preferences provided
-    base_prompt = customize_prompt_for_gender(base_prompt, preferences.get('gender', 'male'))
-    base_prompt = customize_prompt_for_body_type(base_prompt, preferences.get('body_type', 'athletic'))
-    base_prompt = customize_prompt_for_style(base_prompt, preferences.get('style', 'sexy'))
-    base_prompt = customize_prompt_for_tone(base_prompt, preferences.get('tone', 'funny'))
-
-    # Apply tier-based sanitization ONLY for customized prompts
-    if tier == 1:
-        # Tier 1: Creative euphemisms (bypass filters while keeping intent)
-        base_prompt = sanitize_prompt_tier1(base_prompt)
-    elif tier >= 2:
-        # Tier 2+: Heavily softened (fallback for strict filters)
-        base_prompt = sanitize_prompt_tier2(base_prompt, theme.get('description', ''))
-
-    # Add face-swap instructions (adjusted for tier)
-    if tier == 1:
-        gender_pronoun = "their"
-        body_desc = "athletic physique"
-
-        face_swap_instructions = f"""
-IMPORTANT: Use the reference images to capture the person's facial features accurately.
-Maintain their face, skin tone, eye color, and distinctive features while placing them in this scenario.
-The face should look natural and photorealistic, seamlessly blended with the scene.
-
-Scene Description: {base_prompt}
-
-Style: Professional photography, high detail, 4K quality, perfect lighting, magazine cover quality.
-"""
-    else:
-        # Tier 2: Ultra-safe face swap instructions
-        face_swap_instructions = f"""
-IMPORTANT: Use the reference images to capture the person's facial features accurately.
-Create a natural portrait of this person in the described scenario.
-Maintain their facial features, skin tone, and natural appearance.
-
-Scene Description: {base_prompt}
-
-Style: Professional portrait photography, natural lighting, editorial quality.
 """
 
     return face_swap_instructions
