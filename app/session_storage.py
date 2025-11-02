@@ -1,14 +1,52 @@
 """
-Server-side in-memory storage system (temporary replacement for database)
-Stores data in server memory, NOT in cookies (avoids size limits)
+Server-side persistent storage system (temporary replacement for database)
+Stores data in files on disk to survive deployments and restarts
 """
 from flask import session
 from datetime import datetime
 import secrets
+import pickle
+import os
+from pathlib import Path
 
-# SERVER-SIDE storage (not in cookies!)
+# Storage directory (persists across deployments)
+STORAGE_DIR = Path('/tmp/session_storage')
+STORAGE_DIR.mkdir(exist_ok=True)
+
+# SERVER-SIDE storage (persisted to disk!)
 # Key: session_id, Value: project data
 _storage = {}
+_loaded = False
+
+def _load_storage():
+    """Load storage from disk on first access"""
+    global _storage, _loaded
+    if _loaded:
+        return
+
+    # Load all session files from disk
+    for session_file in STORAGE_DIR.glob('*.pkl'):
+        try:
+            with open(session_file, 'rb') as f:
+                session_id = session_file.stem
+                _storage[session_id] = pickle.load(f)
+        except Exception as e:
+            print(f"Warning: Failed to load session {session_file}: {e}")
+
+    _loaded = True
+    print(f"✓ Loaded {len(_storage)} sessions from disk")
+
+def _save_session(session_id):
+    """Save a single session to disk"""
+    if session_id not in _storage:
+        return
+
+    try:
+        session_file = STORAGE_DIR / f'{session_id}.pkl'
+        with open(session_file, 'wb') as f:
+            pickle.dump(_storage[session_id], f)
+    except Exception as e:
+        print(f"Warning: Failed to save session {session_id}: {e}")
 
 def _get_session_id():
     """Get or create session ID (only ID stored in cookie, not data)"""
@@ -18,6 +56,8 @@ def _get_session_id():
 
 def _get_storage():
     """Get storage for current session"""
+    _load_storage()  # Load from disk if not already loaded
+
     session_id = _get_session_id()
     if session_id not in _storage:
         _storage[session_id] = {
@@ -30,6 +70,7 @@ def _get_storage():
             'months': [],
             'preferences': None
         }
+        _save_session(session_id)  # Save new session to disk
     return _storage[session_id]
 
 def init_session():
@@ -59,6 +100,7 @@ def add_uploaded_image(filename, file_data, thumbnail_data):
         'thumbnail_data': thumbnail_data,  # Raw binary data
         'uploaded_at': datetime.utcnow().isoformat()
     })
+    _save_session(_get_session_id())  # Persist to disk
     return image_id
 
 def get_image_by_id(image_id):
@@ -73,6 +115,7 @@ def delete_image(image_id):
     """Delete an image"""
     storage = _get_storage()
     storage['images'] = [img for img in storage['images'] if img['id'] != image_id]
+    _save_session(_get_session_id())  # Persist to disk
 
 def get_all_months():
     """Get all calendar months"""
@@ -95,6 +138,7 @@ def create_months_with_themes(themes):
             'error_message': None,
             'generated_at': None
         })
+    _save_session(_get_session_id())  # Persist to disk
 
 def get_month_by_number(month_num):
     """Get month by number"""
@@ -120,6 +164,7 @@ def update_month_status(month_num, status, image_data=None, error=None):
             if error:
                 month['error_message'] = str(error)
 
+            _save_session(_get_session_id())  # Persist to disk
             return month
 
     return None
@@ -135,6 +180,7 @@ def update_project_status(status):
     """Update project status"""
     storage = _get_storage()
     storage['project']['status'] = status
+    _save_session(_get_session_id())  # Persist to disk
 
 def get_completion_count():
     """Get number of completed months"""
@@ -150,6 +196,7 @@ def set_preferences(preferences):
     """Set user customization preferences"""
     storage = _get_storage()
     storage['preferences'] = preferences
+    _save_session(_get_session_id())  # Persist to disk
     return preferences
 
 def clear_session():
@@ -157,4 +204,10 @@ def clear_session():
     session_id = _get_session_id()
     if session_id in _storage:
         del _storage[session_id]
+
+    # Delete session file from disk
+    session_file = STORAGE_DIR / f'{session_id}.pkl'
+    if session_file.exists():
+        session_file.unlink()
+
     session.clear()
