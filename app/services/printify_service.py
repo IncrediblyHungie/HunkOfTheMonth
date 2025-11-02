@@ -10,29 +10,36 @@ from flask import current_app
 PRINTIFY_API_BASE = "https://api.printify.com/v1"
 
 # Calendar product configurations
+# All calendars use 3454x2725px images and 13 placeholders (front_cover + 12 months)
 CALENDAR_PRODUCTS = {
     'calendar_2026': {
         'blueprint_id': 1253,
         'print_provider_id': 234,
         'variant_id': 94860,
         'name': 'Calendar (2026)',
-        'size': '10.8" × 8.4"'
+        'size': '10.8" × 8.4"',
+        'description': 'Premium 270gsm semi-glossy paper, wire binding'
     },
     'desktop': {
         'blueprint_id': 1170,
-        'print_provider_id': None,  # TODO: Get from API
-        'variant_id': None,
+        'print_provider_id': 'auto',  # Auto-detect on first use
+        'variant_id': 'auto',
         'name': 'Desktop Calendar',
-        'size': '10" × 5"'
+        'size': '10" × 5"',
+        'description': '250gsm premium paper, spiral bound at top'
     },
     'standard_wall': {
         'blueprint_id': 965,
-        'print_provider_id': None,  # TODO: Get from API
-        'variant_id': None,
+        'print_provider_id': 'auto',  # Auto-detect on first use
+        'variant_id': 'auto',
         'name': 'Standard Wall Calendar (2026)',
-        'size': 'Various'
+        'size': 'Multiple sizes',
+        'description': '250gsm high-quality paper, spiral binding'
     }
 }
+
+# Cache for auto-detected configurations
+_config_cache = {}
 
 def get_headers():
     """Get authorization headers for Printify API"""
@@ -44,6 +51,69 @@ def get_headers():
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
+
+def auto_detect_config(blueprint_id):
+    """
+    Auto-detect print provider and variant for a blueprint
+
+    Args:
+        blueprint_id: Printify blueprint ID
+
+    Returns:
+        dict: {'print_provider_id': X, 'variant_id': Y}
+    """
+    cache_key = f"blueprint_{blueprint_id}"
+
+    # Check cache first
+    if cache_key in _config_cache:
+        return _config_cache[cache_key]
+
+    try:
+        # Get print providers for this blueprint
+        response = requests.get(
+            f"{PRINTIFY_API_BASE}/catalog/blueprints/{blueprint_id}/print_providers.json",
+            headers=get_headers(),
+            timeout=10
+        )
+        response.raise_for_status()
+        providers = response.json()
+
+        if not providers:
+            raise Exception(f"No print providers found for blueprint {blueprint_id}")
+
+        # Use first available provider
+        provider_id = providers[0]['id']
+
+        # Get variants for this provider
+        response = requests.get(
+            f"{PRINTIFY_API_BASE}/catalog/blueprints/{blueprint_id}/print_providers/{provider_id}/variants.json",
+            headers=get_headers(),
+            timeout=10
+        )
+        response.raise_for_status()
+        variants_data = response.json()
+
+        variants = variants_data.get('variants', [])
+        if not variants:
+            raise Exception(f"No variants found for blueprint {blueprint_id}, provider {provider_id}")
+
+        # Use first variant
+        variant_id = variants[0]['id']
+
+        config = {
+            'print_provider_id': provider_id,
+            'variant_id': variant_id
+        }
+
+        # Cache it
+        _config_cache[cache_key] = config
+
+        print(f"  ℹ Auto-detected config for blueprint {blueprint_id}: provider={provider_id}, variant={variant_id}")
+        return config
+
+    except Exception as e:
+        print(f"  ⚠️ Auto-detection failed for blueprint {blueprint_id}: {e}")
+        raise Exception(f"Could not auto-detect configuration for blueprint {blueprint_id}. Please configure manually.")
 
 def upload_image(image_data_bytes, filename="month.jpg"):
     """
@@ -92,10 +162,14 @@ def create_calendar_product(product_type, month_image_ids, title="Custom Hunk Ca
     if product_type not in CALENDAR_PRODUCTS:
         raise ValueError(f"Invalid product type: {product_type}")
 
-    config = CALENDAR_PRODUCTS[product_type]
+    config = CALENDAR_PRODUCTS[product_type].copy()
 
-    if not config['print_provider_id'] or not config['variant_id']:
-        raise ValueError(f"Product type {product_type} not fully configured yet")
+    # Auto-detect configuration if needed
+    if config['print_provider_id'] == 'auto' or config['variant_id'] == 'auto':
+        print(f"  ℹ Auto-detecting configuration for {config['name']}...")
+        auto_config = auto_detect_config(config['blueprint_id'])
+        config['print_provider_id'] = auto_config['print_provider_id']
+        config['variant_id'] = auto_config['variant_id']
 
     # Construct print_areas
     print_areas = [
