@@ -148,6 +148,34 @@ def generate_month(month_num):
             'error': str(e)
         }), 500
 
+@bp.route('/test/gemini', methods=['GET'])
+def test_gemini():
+    """Test Gemini API connection and generation"""
+    import os
+    from app.services.gemini_service import GOOGLE_API_KEY, generate_calendar_image
+    from app.services.monthly_themes import get_enhanced_prompt
+
+    result = {
+        'api_key_set': bool(GOOGLE_API_KEY),
+        'api_key_prefix': GOOGLE_API_KEY[:20] if GOOGLE_API_KEY else None,
+    }
+
+    try:
+        # Test simple generation
+        simple_prompt = "A muscular shirtless firefighter with a helmet"
+        image_data = generate_calendar_image(simple_prompt, reference_image_data_list=None)
+
+        result['test_passed'] = True
+        result['image_size'] = len(image_data) if image_data else 0
+        result['message'] = 'Gemini API working correctly'
+
+    except Exception as e:
+        result['test_passed'] = False
+        result['error'] = str(e)
+        result['error_type'] = type(e).__name__
+
+    return jsonify(result)
+
 @bp.route('/checkout/create', methods=['POST'])
 def create_checkout():
     """Create Stripe checkout session for calendar purchase"""
