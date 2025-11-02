@@ -69,12 +69,12 @@
 
 {% block extra_scripts %}
 <script>
-// PARALLEL AI generation with memory management (6 at a time to prevent OOM)
+// PARALLEL AI generation with memory management (2 at a time to prevent OOM)
 const months = {{ months | tojson }};
 let completedCount = months.filter(m => m.generation_status === 'completed').length;
 let failedCount = 0;
 let activeRequests = 0;
-const MAX_PARALLEL = 6; // Generate 6 months at a time (prevents OOM kills on 1GB RAM)
+const MAX_PARALLEL = 2; // Generate 2 months at a time (safer for 1GB RAM machine)
 const MAX_RETRIES = 3; // Retry failed months up to 3 times
 const RETRY_DELAYS = [2000, 5000, 10000]; // Exponential backoff: 2s, 5s, 10s
 

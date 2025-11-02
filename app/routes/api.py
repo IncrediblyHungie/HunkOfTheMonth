@@ -141,11 +141,18 @@ def generate_month(month_num):
         print(f"✅ Month {month_num}: Generation succeeded! Size: {len(image_data)} bytes")
 
         # Convert PNG to JPEG for smaller file size
-        # Quality 85 is sweet spot: great visual quality, 40-50% smaller files
+        # Quality 80 optimized for memory: good quality, smaller files, less RAM
         img = PILImage.open(io.BytesIO(image_data))
         img_io = io.BytesIO()
-        img.convert('RGB').save(img_io, format='JPEG', quality=85, optimize=True)
+        img.convert('RGB').save(img_io, format='JPEG', quality=80, optimize=True)
         jpeg_data = img_io.getvalue()
+
+        # Clear image data from memory immediately
+        del image_data
+        del img
+        del img_io
+        import gc
+        gc.collect()
 
         # Save to session storage
         session_storage.update_month_status(month_num, 'completed', image_data=jpeg_data)

@@ -7,6 +7,7 @@ from datetime import datetime
 import secrets
 import pickle
 import os
+import gc
 from pathlib import Path
 
 # Storage directory (persists across deployments)
@@ -45,6 +46,8 @@ def _save_session(session_id):
         session_file = STORAGE_DIR / f'{session_id}.pkl'
         with open(session_file, 'wb') as f:
             pickle.dump(_storage[session_id], f)
+        # Force garbage collection after saving large image data
+        gc.collect()
     except Exception as e:
         print(f"Warning: Failed to save session {session_id}: {e}")
 
