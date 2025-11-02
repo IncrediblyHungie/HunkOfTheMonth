@@ -1,5 +1,6 @@
 """
 Hunk of the Month - Application Entry Point
+Version: 2.0.1 - Cache-busting rebuild
 """
 import os
 from app import create_app
