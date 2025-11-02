@@ -11,7 +11,10 @@ from google.genai import types
 from PIL import Image
 
 # Configure Gemini API
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyAXdQlDioxbG3wr9jHEaFJiIt6AB5Bdals')
+# IMPORTANT: API key MUST be set as environment variable - never hardcode!
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+if not GOOGLE_API_KEY:
+    raise ValueError("GOOGLE_API_KEY environment variable is required but not set")
 
 def generate_calendar_image(prompt, reference_image_data_list=None):
     """
