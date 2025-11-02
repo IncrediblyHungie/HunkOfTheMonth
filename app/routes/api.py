@@ -77,23 +77,35 @@ def generate_month(month_num):
     from app.services.monthly_themes import get_enhanced_prompt
     from PIL import Image as PILImage
     import io
+    import traceback
+
+    print(f"\n{'='*70}")
+    print(f"🚀 GENERATE MONTH {month_num} - START")
+    print(f"{'='*70}")
 
     project = get_current_project()
     if not project:
+        print(f"❌ Month {month_num}: No project found (Unauthorized)")
         return jsonify({'error': 'Unauthorized'}), 401
 
     if month_num < 1 or month_num > 12:
+        print(f"❌ Month {month_num}: Invalid month number")
         return jsonify({'error': 'Invalid month number'}), 400
 
     try:
         # Get the month record from session
+        print(f"📋 Month {month_num}: Getting month record from session...")
         month = session_storage.get_month_by_number(month_num)
 
         if not month:
+            print(f"❌ Month {month_num}: Month not found in session storage")
             return jsonify({'error': 'Month not found'}), 404
+
+        print(f"✓ Month {month_num}: Found month record, status={month.get('generation_status')}")
 
         # Check if already completed
         if month['generation_status'] == 'completed':
+            print(f"✓ Month {month_num}: Already completed, skipping")
             return jsonify({
                 'success': True,
                 'status': 'completed',
@@ -101,21 +113,32 @@ def generate_month(month_num):
             })
 
         # Mark as processing
+        print(f"📝 Month {month_num}: Marking as processing...")
         session_storage.update_month_status(month_num, 'processing')
 
         # Get reference images for face-swapping (already raw binary data!)
+        print(f"🖼️  Month {month_num}: Getting reference images...")
         uploaded_images = session_storage.get_uploaded_images()
+        print(f"✓ Month {month_num}: Found {len(uploaded_images)} uploaded images")
+
         reference_image_data = [img['file_data'] for img in uploaded_images]
 
         if not reference_image_data:
-            session_storage.update_month_status(month_num, 'failed', error='No reference images found')
-            return jsonify({'error': 'No reference images'}), 400
+            error_msg = 'No reference images found'
+            print(f"❌ Month {month_num}: {error_msg}")
+            session_storage.update_month_status(month_num, 'failed', error=error_msg)
+            return jsonify({'error': error_msg}), 400
+
+        print(f"✓ Month {month_num}: Prepared {len(reference_image_data)} reference images")
 
         # Generate image with simple working prompts
-        print(f"📸 Month {month_num}: Generating with classic prompts...")
+        print(f"📸 Month {month_num}: Getting enhanced prompt...")
         enhanced_prompt = get_enhanced_prompt(month_num)
+        print(f"✓ Month {month_num}: Prompt length: {len(enhanced_prompt)} chars")
+
+        print(f"🎨 Month {month_num}: Starting Gemini API call...")
         image_data = generate_calendar_image(enhanced_prompt, reference_image_data)
-        print(f"✅ Month {month_num}: Generation succeeded!")
+        print(f"✅ Month {month_num}: Generation succeeded! Size: {len(image_data)} bytes")
 
         # Convert PNG to JPEG for smaller file size
         # Quality 85 is sweet spot: great visual quality, 40-50% smaller files
@@ -139,13 +162,22 @@ def generate_month(month_num):
 
     except Exception as e:
         # Mark as failed
-        session_storage.update_month_status(month_num, 'failed', error=str(e))
+        error_msg = str(e)
+        print(f"\n❌ Month {month_num}: EXCEPTION CAUGHT")
+        print(f"   Error type: {type(e).__name__}")
+        print(f"   Error message: {error_msg}")
+        print(f"   Traceback:")
+        traceback.print_exc()
+        print(f"{'='*70}\n")
+
+        session_storage.update_month_status(month_num, 'failed', error=error_msg)
 
         return jsonify({
             'success': False,
             'status': 'failed',
             'month': month_num,
-            'error': str(e)
+            'error': error_msg,
+            'error_type': type(e).__name__
         }), 500
 
 @bp.route('/test/gemini', methods=['GET'])
