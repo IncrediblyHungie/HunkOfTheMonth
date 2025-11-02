@@ -43,15 +43,33 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+    # Printify configuration
+    app.config['PRINTIFY_API_TOKEN'] = os.getenv('PRINTIFY_API_TOKEN')
+    app.config['PRINTIFY_SHOP_ID'] = os.getenv('PRINTIFY_SHOP_ID', None)  # Auto-detect from API
+
+    # Stripe configuration
+    app.config['STRIPE_SECRET_KEY'] = os.getenv('STRIPE_SECRET_KEY')
+    app.config['STRIPE_PUBLISHABLE_KEY'] = os.getenv('STRIPE_PUBLISHABLE_KEY')
+    app.config['STRIPE_WEBHOOK_SECRET'] = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+    # Initialize Stripe
+    if app.config.get('STRIPE_SECRET_KEY'):
+        import stripe
+        stripe.api_key = app.config['STRIPE_SECRET_KEY']
+        print("✓ Stripe initialized")
+    else:
+        print("⚠ STRIPE_SECRET_KEY not configured - payment features disabled")
+
     # Skip database initialization
     # db.init_app(app)
     # migrate.init_app(app, db)
     CORS(app)
 
     # Register blueprints
-    from app.routes import main, projects, api
+    from app.routes import main, projects, api, webhooks
     app.register_blueprint(main.bp)
     app.register_blueprint(projects.bp)
     app.register_blueprint(api.bp)
+    app.register_blueprint(webhooks.bp)
 
     return app

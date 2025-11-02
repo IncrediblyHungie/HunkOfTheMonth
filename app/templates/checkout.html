@@ -1,93 +1,213 @@
 {% extends "base.html" %}
 
-{% block title %}Checkout{% endblock %}
+{% block title %}Order Your Calendar{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <h2 class="card-title mb-4 text-center">
-                        <i class="fas fa-shopping-cart text-success me-2"></i>
-                        Order Your Calendar
-                    </h2>
+        <div class="col-lg-10">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-gift text-primary me-2"></i>
+                Order Your Custom Calendar
+            </h1>
+            <p class="lead text-center mb-5">
+                Your 12 hunk months are ready! Choose your calendar style and we'll print and ship it to you.
+            </p>
 
-                    <!-- Coming Soon Alert -->
-                    <div class="alert alert-warning text-center" role="alert">
-                        <i class="fas fa-construction fa-2x mb-3 d-block"></i>
-                        <h4 class="alert-heading">Payment Integration Coming Soon!</h4>
-                        <p class="mb-3">
-                            We're currently setting up our payment system with Stripe.
-                            Leave your email below and we'll notify you when ordering is available!
-                        </p>
-                        <hr>
-                        <p class="mb-0 small">
-                            Expected pricing: <strong>$39.99 - $49.99</strong> including shipping
-                        </p>
-                    </div>
-
-                    <!-- Email Notification Form -->
-                    <form method="POST" class="mt-4">
-                        <div class="mb-4">
-                            <label for="email" class="form-label fw-bold">
-                                <i class="fas fa-envelope me-2"></i>
-                                Email Address
-                            </label>
-                            <input
-                                type="email"
-                                class="form-control form-control-lg"
-                                id="email"
-                                name="email"
-                                placeholder="your@email.com"
-                                required
-                            >
-                            <div class="form-text">
-                                We'll send you an email when ordering is available (within 1-2 weeks)
+            <div class="row g-4">
+                <!-- Calendar 2026 -->
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm hover-lift">
+                        <img src="https://images.printify.com/68d29f8ffd6cd3545304b932"
+                             class="card-img-top"
+                             alt="Calendar 2026"
+                             style="height: 250px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">Calendar 2026</h5>
+                            <p class="card-text flex-grow-1">
+                                <small class="text-muted">10.8" × 8.4"</small><br>
+                                Premium 270gsm semi-glossy paper<br>
+                                Wire binding, centered holes for hanging
+                            </p>
+                            <div class="mb-3">
+                                <h4 class="text-primary mb-0">$24.99</h4>
+                                <small class="text-muted">Free shipping to US</small>
                             </div>
                         </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-bell me-2"></i>
-                                Notify Me When Ready
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-primary w-100 order-btn"
+                                    data-product="calendar_2026">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                Order Now
                             </button>
-                            <a href="{{ url_for('projects.preview') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>
-                                Back to Preview
-                            </a>
                         </div>
-                    </form>
-
-                    <!-- Features -->
-                    <div class="mt-5 pt-4 border-top">
-                        <h5 class="mb-3">What You'll Get:</h5>
-                        <ul class="list-unstyled">
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                High-quality printed calendar (multiple size options)
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                All 12 AI-generated images in stunning detail
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                Premium paper stock suitable for framing
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                Fast shipping to your door (5-7 business days)
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check text-success me-2"></i>
-                                Money-back guarantee if not satisfied
-                            </li>
-                        </ul>
                     </div>
                 </div>
+
+                <!-- Desktop Calendar -->
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm hover-lift">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/400x250/6c757d/ffffff?text=Desktop+Calendar"
+                                 class="card-img-top"
+                                 alt="Desktop Calendar"
+                                 style="height: 250px; object-fit: cover;">
+                            <span class="badge bg-warning position-absolute top-0 end-0 m-2">Coming Soon</span>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">Desktop Calendar</h5>
+                            <p class="card-text flex-grow-1">
+                                <small class="text-muted">10" × 5"</small><br>
+                                250gsm premium paper<br>
+                                Spiral bound at top
+                            </p>
+                            <div class="mb-3">
+                                <h4 class="text-primary mb-0">$19.99</h4>
+                                <small class="text-muted">Free shipping to US</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="fas fa-clock me-2"></i>
+                                Available Soon
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Standard Wall Calendar -->
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm hover-lift">
+                        <div class="position-relative">
+                            <img src="https://via.placeholder.com/400x250/6c757d/ffffff?text=Wall+Calendar"
+                                 class="card-img-top"
+                                 alt="Wall Calendar"
+                                 style="height: 250px; object-fit: cover;">
+                            <span class="badge bg-warning position-absolute top-0 end-0 m-2">Coming Soon</span>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">Wall Calendar 2026</h5>
+                            <p class="card-text flex-grow-1">
+                                <small class="text-muted">Multiple sizes</small><br>
+                                250gsm high-quality paper<br>
+                                Spiral binding, matte grid area
+                            </p>
+                            <div class="mb-3">
+                                <h4 class="text-primary mb-0">$29.99</h4>
+                                <small class="text-muted">Free shipping to US</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="fas fa-clock me-2"></i>
+                                Available Soon
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="card mt-5 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        What's Included
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>All 12 AI-generated images</strong> printed in high quality
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Professional printing</strong> on premium paper stock
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Full 2026 calendar</strong> with date grids
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-shipping-fast text-primary me-2"></i>
+                                    <strong>Fast shipping</strong> - arrives in 5-7 business days
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-lock text-info me-2"></i>
+                                    <strong>Secure payment</strong> via Stripe
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-smile text-warning me-2"></i>
+                                    <strong>100% satisfaction guarantee</strong>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('projects.preview') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Back to Preview
+                </a>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.hover-lift {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+}
+</style>
+
+<script>
+document.querySelectorAll('.order-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const productType = this.dataset.product;
+
+        // Show loading
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+        this.disabled = true;
+
+        try {
+            // Create Stripe checkout session
+            const response = await fetch('/api/checkout/create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({product_type: productType})
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to Stripe checkout
+                console.log('✓ Checkout session created:', data.session_id);
+                window.location.href = data.checkout_url;
+            } else {
+                alert('Error: ' + (data.error || 'Failed to create checkout session'));
+                this.innerHTML = originalHTML;
+                this.disabled = false;
+            }
+        } catch (error) {
+            console.error('Checkout error:', error);
+            alert('Failed to start checkout. Please try again.');
+            this.innerHTML = originalHTML;
+            this.disabled = false;
+        }
+    });
+});
+</script>
 {% endblock %}

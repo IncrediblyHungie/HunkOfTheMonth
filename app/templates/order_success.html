@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmed!{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-success">
+                <div class="card-body p-5 text-center">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 80px;"></i>
+                    </div>
+
+                    <h1 class="card-title mb-4">
+                        Order Confirmed!
+                    </h1>
+
+                    <p class="lead mb-4">
+                        Thank you for your order! Your custom "Hunk of the Month" calendar is being prepared for printing.
+                    </p>
+
+                    <!-- Order Details -->
+                    <div class="alert alert-info" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-info-circle me-2"></i>
+                            What Happens Next?
+                        </h5>
+                        <hr>
+                        <ol class="text-start mb-0">
+                            <li class="mb-2">
+                                <strong>Processing:</strong> We're uploading your 12 custom images to our print partner (Printify)
+                            </li>
+                            <li class="mb-2">
+                                <strong>Printing:</strong> Your calendar will be professionally printed on premium paper
+                            </li>
+                            <li class="mb-2">
+                                <strong>Shipping:</strong> You'll receive a tracking number via email within 24-48 hours
+                            </li>
+                            <li class="mb-2">
+                                <strong>Delivery:</strong> Expect your calendar to arrive in 5-7 business days
+                            </li>
+                        </ol>
+                    </div>
+
+                    <!-- Email Confirmation -->
+                    <div class="mb-4">
+                        <i class="fas fa-envelope text-primary me-2"></i>
+                        <small class="text-muted">
+                            A confirmation email has been sent to you with order details and tracking information.
+                        </small>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-grid gap-2 col-md-8 mx-auto">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-home me-2"></i>
+                            Back to Home
+                        </a>
+                        <a href="{{ url_for('projects.preview') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-images me-2"></i>
+                            View My Calendar Again
+                        </a>
+                    </div>
+
+                    <!-- Support -->
+                    <div class="mt-5 pt-4 border-top">
+                        <h6 class="mb-3">Need Help?</h6>
+                        <p class="text-muted small mb-0">
+                            <i class="fas fa-question-circle me-1"></i>
+                            Questions about your order? Contact us at
+                            <a href="mailto:support@hunkofthemonth.com">support@hunkofthemonth.com</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share Section -->
+            <div class="card shadow mt-4">
+                <div class="card-body p-4 text-center">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-share-alt text-primary me-2"></i>
+                        Love Your Calendar?
+                    </h5>
+                    <p class="mb-3">
+                        Share the fun! Tell your friends they can create their own hunky calendar too!
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="https://twitter.com/intent/tweet?text=I%20just%20ordered%20my%20custom%20Hunk%20of%20the%20Month%20calendar!%20Check%20it%20out%3A%20https%3A%2F%2Fhunkofthemonth.fly.dev"
+                           target="_blank"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fab fa-twitter me-1"></i>
+                            Tweet
+                        </a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=https://hunkofthemonth.fly.dev"
+                           target="_blank"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fab fa-facebook me-1"></i>
+                            Share
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

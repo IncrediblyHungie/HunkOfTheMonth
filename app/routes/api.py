@@ -1,9 +1,10 @@
 """
 API routes for AJAX calls and image serving
 """
-from flask import Blueprint, jsonify, send_file, Response
+from flask import Blueprint, jsonify, send_file, Response, request, url_for
 from app import session_storage
 from app.routes.main import get_current_project
+from app.services import stripe_service
 import io
 
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -195,3 +196,37 @@ def generate_month(month_num):
             'month': month_num,
             'error': str(e)
         }), 500
+
+@bp.route('/checkout/create', methods=['POST'])
+def create_checkout():
+    """Create Stripe checkout session for calendar purchase"""
+    project = get_current_project()
+    if not project:
+        return jsonify({'error': 'No active project'}), 401
+
+    data = request.json
+    product_type = data.get('product_type')
+
+    if product_type not in ['calendar_2026', 'desktop', 'standard_wall']:
+        return jsonify({'error': 'Invalid product type'}), 400
+
+    try:
+        # Create Stripe checkout session
+        session_data = stripe_service.create_checkout_session(
+            product_type=product_type,
+            success_url=url_for('main.order_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('projects.preview', _external=True)
+        )
+
+        # Store checkout session ID in session storage for tracking
+        # session_storage.save_checkout_session(session_data['session_id'], product_type)
+
+        return jsonify({
+            'success': True,
+            'checkout_url': session_data['url'],
+            'session_id': session_data['session_id']
+        })
+
+    except Exception as e:
+        print(f"❌ Checkout creation error: {e}")
+        return jsonify({'error': str(e)}), 500

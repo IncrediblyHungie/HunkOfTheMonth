@@ -1,0 +1,161 @@
+"""
+Stripe payment processing integration
+Handles checkout sessions, webhooks, and payment verification
+"""
+import stripe
+from flask import current_app
+
+# Product pricing in cents
+CALENDAR_PRICES = {
+    'calendar_2026': 2499,  # $24.99
+    'desktop': 1999,         # $19.99
+    'standard_wall': 2999    # $29.99
+}
+
+PRODUCT_NAMES = {
+    'calendar_2026': 'Custom Hunk Calendar 2026',
+    'desktop': 'Custom Desktop Calendar',
+    'standard_wall': 'Custom Wall Calendar 2026'
+}
+
+PRODUCT_DESCRIPTIONS = {
+    'calendar_2026': 'Personalized 10.8"×8.4" calendar with your AI-generated hunk images. Premium 270gsm semi-glossy paper, wire binding.',
+    'desktop': 'Personalized 10"×5" desktop calendar with your AI-generated images. 250gsm paper, spiral bound.',
+    'standard_wall': 'Personalized wall calendar with your AI-generated images. 250gsm premium paper, spiral binding.'
+}
+
+def create_checkout_session(product_type, success_url, cancel_url, metadata=None):
+    """
+    Create Stripe Checkout session for calendar purchase
+
+    Args:
+        product_type: 'calendar_2026', 'desktop', or 'standard_wall'
+        success_url: URL to redirect after successful payment
+        cancel_url: URL to redirect if user cancels
+        metadata: Optional dict of metadata to attach to session
+
+    Returns:
+        dict: {'session_id': str, 'url': str}
+    """
+    if product_type not in CALENDAR_PRICES:
+        raise ValueError(f"Invalid product type: {product_type}")
+
+    price_cents = CALENDAR_PRICES[product_type]
+    product_name = PRODUCT_NAMES[product_type]
+    description = PRODUCT_DESCRIPTIONS[product_type]
+
+    # Prepare metadata
+    session_metadata = {'product_type': product_type}
+    if metadata:
+        session_metadata.update(metadata)
+
+    # Create checkout session
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price_data': {
+                'currency': 'usd',
+                'product_data': {
+                    'name': product_name,
+                    'description': description,
+                    'images': ['https://hunkofthemonth.fly.dev/static/calendar_preview.jpg']
+                },
+                'unit_amount': price_cents,
+            },
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=success_url,
+        cancel_url=cancel_url,
+        customer_email=None,  # Stripe will collect
+        shipping_address_collection={
+            'allowed_countries': ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'BE']
+        },
+        phone_number_collection={
+            'enabled': True
+        },
+        metadata=session_metadata,
+        allow_promotion_codes=True  # Enable discount codes
+    )
+
+    return {
+        'session_id': session.id,
+        'url': session.url
+    }
+
+def retrieve_checkout_session(session_id, expand=None):
+    """
+    Retrieve checkout session details from Stripe
+
+    Args:
+        session_id: Stripe checkout session ID
+        expand: List of fields to expand (e.g., ['line_items', 'customer'])
+
+    Returns:
+        Stripe Session object
+    """
+    return stripe.checkout.Session.retrieve(
+        session_id,
+        expand=expand or []
+    )
+
+def verify_webhook_signature(payload, signature):
+    """
+    Verify Stripe webhook signature for security
+
+    Args:
+        payload: Raw webhook payload (bytes)
+        signature: Stripe-Signature header value
+
+    Returns:
+        Stripe Event object if valid
+
+    Raises:
+        ValueError if signature invalid
+    """
+    webhook_secret = current_app.config.get('STRIPE_WEBHOOK_SECRET')
+
+    if not webhook_secret:
+        raise ValueError("STRIPE_WEBHOOK_SECRET not configured")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, signature, webhook_secret
+        )
+        return event
+    except ValueError as e:
+        # Invalid payload
+        raise ValueError(f"Invalid payload: {e}")
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        raise ValueError(f"Invalid signature: {e}")
+
+def extract_shipping_address(checkout_session):
+    """
+    Extract shipping address from Stripe checkout session
+
+    Args:
+        checkout_session: Stripe Session object (must have shipping_details expanded)
+
+    Returns:
+        dict: Formatted shipping address
+    """
+    shipping = checkout_session.shipping_details.address
+    customer_name = checkout_session.customer_details.name
+
+    # Split name into first and last
+    name_parts = customer_name.split(maxsplit=1)
+    first_name = name_parts[0] if name_parts else customer_name
+    last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+    return {
+        'first_name': first_name,
+        'last_name': last_name,
+        'address1': shipping.line1,
+        'address2': shipping.line2 or '',
+        'city': shipping.city,
+        'state': shipping.state or '',
+        'zip': shipping.postal_code,
+        'country': shipping.country,
+        'phone': checkout_session.customer_details.phone or ''
+    }

@@ -1,7 +1,7 @@
 """
 Main routes - Landing page, about, etc.
 """
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, request
 from app import session_storage
 from datetime import datetime
 import secrets
@@ -40,3 +40,10 @@ def get_current_project():
 
     # Return project from session storage
     return session_storage.get_current_project()
+
+@bp.route('/order/success')
+def order_success():
+    """Order confirmation page after successful Stripe payment"""
+    session_id = request.args.get('session_id')
+
+    return render_template('order_success.html', session_id=session_id)
