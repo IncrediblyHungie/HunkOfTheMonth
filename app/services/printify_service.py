@@ -371,3 +371,105 @@ def get_shop_id():
     current_app.config['PRINTIFY_SHOP_ID'] = shop_id
     print(f"  ℹ Using Printify shop: {shop_id}")
     return shop_id
+
+def process_full_order(product_type, month_image_data, shipping_address, customer_email):
+    """
+    Complete workflow: Upload images, create product, create order, submit to production
+
+    Args:
+        product_type: 'calendar_2026', 'desktop', or 'standard_wall'
+        month_image_data: Dict mapping month numbers (1-12) to binary image data
+                         {1: bytes, 2: bytes, ..., 12: bytes}
+        shipping_address: Dict with required address fields
+                         {'first_name', 'last_name', 'address1', 'address2',
+                          'city', 'state', 'zip', 'country', 'phone'}
+        customer_email: Customer email address
+
+    Returns:
+        dict: {
+            'product_id': str,
+            'order_id': str,
+            'status': 'success'
+        }
+    """
+    print(f"\n{'='*70}")
+    print(f"🚀 STARTING PRINTIFY FULFILLMENT FOR {product_type.upper()}")
+    print(f"{'='*70}\n")
+
+    try:
+        # Step 1: Upload all 12 month images
+        print("📤 STEP 1: Uploading images...")
+        month_image_ids = {}
+        month_names = ["january", "february", "march", "april", "may", "june",
+                      "july", "august", "september", "october", "november", "december"]
+
+        for month_num in range(1, 13):
+            if month_num not in month_image_data:
+                raise ValueError(f"Missing image data for month {month_num}")
+
+            month_name = month_names[month_num - 1]
+            filename = f"{month_name}.jpg"
+
+            upload_data = upload_image(month_image_data[month_num], filename)
+            month_image_ids[month_name] = upload_data['id']
+
+            # Small delay to avoid rate limiting
+            time.sleep(0.1)
+
+        print(f"✅ Uploaded {len(month_image_ids)} images\n")
+
+        # Step 2: Create calendar product
+        print("🎨 STEP 2: Creating calendar product...")
+        product_id = create_calendar_product(
+            product_type,
+            month_image_ids,
+            title=f"Hunk of the Month Calendar - {customer_email}"
+        )
+        print(f"✅ Product created: {product_id}\n")
+
+        # Step 3: Get variant ID for this product type
+        config = CALENDAR_PRODUCTS[product_type].copy()
+        if config['variant_id'] == 'auto':
+            auto_config = auto_detect_config(config['blueprint_id'])
+            variant_id = auto_config['variant_id']
+        else:
+            variant_id = config['variant_id']
+
+        # Step 4: Create order
+        print("📦 STEP 3: Creating order...")
+        order_id = create_order(
+            product_id,
+            variant_id,
+            quantity=1,
+            shipping_address=shipping_address,
+            customer_email=customer_email
+        )
+        print(f"✅ Order created: {order_id}\n")
+
+        # Step 5: Submit to production
+        print("🏭 STEP 4: Submitting to production...")
+        submit_order(order_id)
+        print(f"✅ Order submitted to production!\n")
+
+        print(f"{'='*70}")
+        print(f"✅ FULFILLMENT COMPLETE")
+        print(f"{'='*70}")
+        print(f"📦 Order ID: {order_id}")
+        print(f"🎨 Product ID: {product_id}")
+        print(f"📧 Customer: {customer_email}")
+        print(f"📍 Ship to: {shipping_address['city']}, {shipping_address['country']}")
+        print(f"{'='*70}\n")
+
+        return {
+            'product_id': product_id,
+            'order_id': order_id,
+            'status': 'success'
+        }
+
+    except Exception as e:
+        print(f"\n{'='*70}")
+        print(f"❌ FULFILLMENT FAILED")
+        print(f"{'='*70}")
+        print(f"Error: {str(e)}")
+        print(f"{'='*70}\n")
+        raise

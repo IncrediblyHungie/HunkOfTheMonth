@@ -4,6 +4,7 @@ Currently handles Stripe payment confirmation webhooks
 """
 from flask import Blueprint, request, jsonify
 import stripe
+from datetime import datetime
 from app.services import stripe_service, printify_service
 from app import session_storage
 
@@ -34,18 +35,20 @@ def stripe_webhook():
         # Retrieve full checkout session with expanded data
         checkout_session = stripe_service.retrieve_checkout_session(
             session_obj['id'],
-            expand=['line_items', 'shipping_details', 'customer']
+            expand=['line_items', 'customer']
         )
 
         # Extract payment and customer information
         payment_intent_id = checkout_session.payment_intent
         customer_email = checkout_session.customer_details.email
         product_type = checkout_session.metadata.get('product_type')
+        internal_session_id = checkout_session.metadata.get('internal_session_id')
 
         print(f"✅ Payment successful!")
         print(f"   Customer: {customer_email}")
         print(f"   Product: {product_type}")
         print(f"   Payment Intent: {payment_intent_id}")
+        print(f"   Internal Session ID: {internal_session_id}")
 
         # Extract shipping address
         shipping_address = stripe_service.extract_shipping_address(checkout_session)
@@ -55,7 +58,8 @@ def stripe_webhook():
         # For now, we'll do it synchronously
         try:
             order_id = create_printify_order(
-                session_id=checkout_session.id,
+                internal_session_id=internal_session_id,
+                stripe_session_id=checkout_session.id,
                 payment_intent_id=payment_intent_id,
                 product_type=product_type,
                 customer_email=customer_email,
@@ -73,7 +77,7 @@ def stripe_webhook():
 
     return jsonify({'success': True})
 
-def create_printify_order(session_id, payment_intent_id, product_type, customer_email, shipping_address):
+def create_printify_order(internal_session_id, stripe_session_id, payment_intent_id, product_type, customer_email, shipping_address):
     """
     Create Printify order after successful payment
 
@@ -84,7 +88,8 @@ def create_printify_order(session_id, payment_intent_id, product_type, customer_
     4. Submits the order to Printify for fulfillment
 
     Args:
-        session_id: Stripe checkout session ID
+        internal_session_id: Internal session ID to look up user's calendar
+        stripe_session_id: Stripe checkout session ID
         payment_intent_id: Stripe payment intent ID
         product_type: 'calendar_2026', 'desktop', or 'standard_wall'
         customer_email: Customer email address
@@ -100,14 +105,15 @@ def create_printify_order(session_id, payment_intent_id, product_type, customer_
     print("📦 Starting Printify Order Creation")
     print("="*60)
 
-    # Step 1: Get user's generated month images from session storage
-    # Note: We need to find the session by the Stripe session ID
-    # For now, we'll get from the current active session
-    # In production, we should store session_id -> guest_token mapping
-    months = session_storage.get_all_months()
+    # Step 1: Get user's generated month images from session storage using internal session ID
+    print(f"   Looking up calendar images for session: {internal_session_id}...")
+
+    months = session_storage.get_months_by_session_id(internal_session_id)
 
     if not months or len(months) < 12:
         raise Exception(f"Insufficient month images: found {len(months)}, need 12")
+
+    print(f"   Found {len(months)} months in session storage")
 
     # Step 2: Upload all 12 month images to Printify
     print("\n📤 Uploading images to Printify...")
@@ -119,12 +125,12 @@ def create_printify_order(session_id, payment_intent_id, product_type, customer_
         month_num = i + 1
         month_data = next((m for m in months if m['month_number'] == month_num), None)
 
-        if not month_data or not month_data.get('image_data'):
+        if not month_data or not month_data.get('master_image_data'):
             raise Exception(f"Missing image data for month {month_num}")
 
         # Upload to Printify
         upload_data = printify_service.upload_image(
-            month_data['image_data'],
+            month_data['master_image_data'],
             filename=f"{month_name}.jpg"
         )
 
@@ -169,18 +175,20 @@ def create_printify_order(session_id, payment_intent_id, product_type, customer_
     print(f"   Customer: {customer_email}")
     print("="*60 + "\n")
 
-    # TODO: Save order details to database
-    # order = Order(
-    #     stripe_checkout_session_id=session_id,
-    #     stripe_payment_intent_id=payment_intent_id,
-    #     printify_order_id=order_id,
-    #     printify_product_id=product_id,
-    #     product_type=product_type,
-    #     customer_email=customer_email,
-    #     shipping_address=shipping_address,
-    #     status='submitted'
-    # )
-    # db.session.add(order)
-    # db.session.commit()
+    # Save order details to session storage
+    order_info = {
+        'stripe_checkout_session_id': stripe_session_id,
+        'stripe_payment_intent_id': payment_intent_id,
+        'printify_order_id': order_id,
+        'printify_product_id': product_id,
+        'product_type': product_type,
+        'customer_email': customer_email,
+        'shipping_address': shipping_address,
+        'status': 'submitted',
+        'created_at': datetime.now().isoformat()
+    }
+
+    session_storage.save_order_info(internal_session_id, order_info)
+    print(f"💾 Order info saved to session storage")
 
     return order_id

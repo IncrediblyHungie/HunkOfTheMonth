@@ -10,9 +10,9 @@ import os
 import gc
 from pathlib import Path
 
-# Storage directory (persists across deployments)
-STORAGE_DIR = Path('/tmp/session_storage')
-STORAGE_DIR.mkdir(exist_ok=True)
+# Storage directory (persistent volume on Fly.io, falls back to /tmp for local dev)
+STORAGE_DIR = Path('/data/session_storage') if Path('/data').exists() else Path('/tmp/session_storage')
+STORAGE_DIR.mkdir(exist_ok=True, parents=True)
 
 # SERVER-SIDE storage (persisted to disk!)
 # Key: session_id, Value: project data
@@ -214,3 +214,26 @@ def clear_session():
         session_file.unlink()
 
     session.clear()
+
+def get_months_by_session_id(session_id):
+    """Get all months for a specific session ID (used by webhooks)"""
+    _load_storage()
+    if session_id in _storage:
+        return _storage[session_id].get('months', [])
+    return []
+
+def save_order_info(session_id, order_data):
+    """Save order information to a specific session (used by webhooks)"""
+    _load_storage()
+    if session_id in _storage:
+        _storage[session_id]['order'] = order_data
+        _save_session(session_id)
+        return True
+    return False
+
+def get_order_info_by_session_id(session_id):
+    """Get order information for a specific session"""
+    _load_storage()
+    if session_id in _storage:
+        return _storage[session_id].get('order')
+    return None
