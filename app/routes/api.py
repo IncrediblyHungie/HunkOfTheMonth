@@ -208,6 +208,33 @@ def test_gemini():
 
     return jsonify(result)
 
+@bp.route('/debug/session', methods=['GET'])
+def debug_session():
+    """Debug endpoint to check session storage state"""
+    project = get_current_project()
+
+    debug_info = {
+        'has_project': bool(project),
+        'project_id': project['id'] if project else None,
+        'project_status': project.get('status') if project else None,
+    }
+
+    if project:
+        uploaded_images = session_storage.get_uploaded_images()
+        months = session_storage.get_all_months()
+
+        debug_info.update({
+            'uploaded_images_count': len(uploaded_images),
+            'uploaded_images_sizes': [len(img.get('file_data', b'')) for img in uploaded_images],
+            'months_count': len(months),
+            'months_status': {
+                m['month_number']: m.get('generation_status')
+                for m in months
+            }
+        })
+
+    return jsonify(debug_info)
+
 @bp.route('/checkout/create', methods=['POST'])
 def create_checkout():
     """Create Stripe checkout session for calendar purchase"""
