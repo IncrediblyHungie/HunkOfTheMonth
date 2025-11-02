@@ -1,6 +1,6 @@
 """
 Hunk of the Month - Application Entry Point
-Version: 2.0.2 - Stripe fix deployed
+Version: 2.0.3 - CORRECT FILE: Sequential generation in generating_local.html
 """
 import os
 from app import create_app
