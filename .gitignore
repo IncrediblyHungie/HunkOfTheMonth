@@ -76,3 +76,9 @@ migrations/versions/
 
 # Railway
 .railway/
+
+# Sensitive files with API keys
+DEPLOYMENT_TOKENS.md
+test_*.py
+run_local.sh
+test_gemini*.py
